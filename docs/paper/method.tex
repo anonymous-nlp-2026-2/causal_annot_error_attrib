@@ -1,0 +1,108 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Setup and Notation}
+\label{sec:notation}
+
+Let $A$ denote a true $K$-class categorical variable (e.g., sentiment with $K{=}3$ levels) and $A^*$ its observed, potentially misclassified version produced by an LLM annotator. The misclassification process is characterized by a $K{\times}K$ confusion matrix $C$ with entries $C_{jk} = P(A^*{=}j \mid A{=}k)$, where each column sums to one. Following \citet{hernan_cole2009}, we represent this measurement process using \emph{starred-node} DAGs: the true variable $A$ is latent, and the observed $A^*$ is connected to $A$ via a dashed measurement edge.
+
+\paragraph{Notation conventions.}
+Our analysis characterizes systematic bias---the value an estimator converges to as $N \to \infty$ (the probability limit, or plim)---rather than finite-sample variance. The Frisch--Waugh--Lovell (FWL) theorem guarantees that each regression coefficient equals the coefficient from a simple regression after residualizing all other variables; this is why matrix-based corrections fail for covariate topologies (Section~\ref{sec:correction}): replacing the mismeasured variable with a corrected version does not change the residualized relationship. Table~\ref{tab:notation} (Appendix~\ref{app:notation_table}) collects all notation.
+
+\begin{definition}[Non-differential misclassification]
+\label{def:nondiff}
+Misclassification of $A$ is non-differential with respect to outcome $Y$ and covariates $\mathbf{Z}$ if $P(A^*{=}j \mid A{=}k, Y, \mathbf{Z}) = P(A^*{=}j \mid A{=}k) = C_{jk}$ for all $j,k$.
+\end{definition}
+
+This holds when the LLM classifies without observing the outcome---the typical CSS setup~\cite{ziems2024can}; topic-stratified confusion matrices confirm cross-group stability (Appendix~\ref{sec:nondiff_verify}). Violations arise when pretraining data encodes $A$--$Y$ associations; our stress test (Appendix~\ref{sec:nondiff_stress}) shows $<$3~pp degradation under uniform $\varepsilon{=}0.05$ violations, but $\varepsilon{=}0.01$ structured departure produces sign reversal in 14/16 $K{\geq}3$ exposure configurations (Appendix~\ref{sec:realistic_epsilon}).
+
+We study seven canonical DAG topologies (Figure~\ref{fig:dag_taxonomy})~\cite{pearl2009} in which $A$ occupies structurally distinct causal roles: confounder, exposure, mediator, collider, M-bias variable, front-door mediator, and instrument. Throughout, we derive probability limits under \emph{linear} structural equation models~\cite{carroll2006}, the standard framework for exact characterization of topology-dependent bias; robustness under logistic regression is verified in Appendix~\ref{sec:logistic_dgp} and~\ref{sec:fwl_nonlinear}.
+
+\subsection{Multi-Class Bias Expressions}
+\label{sec:bias_expressions}
+
+For each topology, we derive the $\text{plim}$\footnote{The probability limit (plim) is the value to which an estimator converges as sample size $N \to \infty$; it characterizes systematic bias separately from sampling variability.} of the naive estimator that substitutes $A^*$ for $A$. Let $\tau$ denote the target causal parameter---its precise definition is topology-specific (e.g., the coefficient on $X$ for confounding, the category-specific $\beta_j$ for exposure, or the direct effect $\tau_{\text{direct}}$ for mediation)---and $\hat{\tau}(A^*)$ the estimator using misclassified annotations.
+
+\paragraph{Confounding ($A$ = confounder).}
+When $A$ confounds the $X{\to}Y$ relationship, the OLS estimator controlling for $A^*$ has probability limit
+\begin{equation}
+\label{eq:confounding}
+\text{plim}\;\hat{\tau}(A^*) = \bigl(\mathbb{E}[Z^{\prime}Z]\bigr)^{-1}\mathbb{E}[Z^{\prime}X]\,\boldsymbol{\beta},
+\end{equation}
+where $Z = [X, \text{dummies}(A^*)]$, $\boldsymbol{\beta}$ contains the true coefficients, and the target parameter $\tau$ is the coefficient on $X$. Misclassification produces residual confounding that monotonically approaches the omitted variable bias, but the sign of $\hat{\tau}$ is preserved: $\tau_{\text{sign\_flip}} = 0$ structurally.\footnote{Consistent with \citet{brenner1993}: misclassification degrades confounding control, producing amplification ($|\hat{\tau}| > |\tau|$, universal in this topology) but never sign reversal ($\text{sign}(\hat{\tau}) \neq \text{sign}(\tau)$).}
+
+\paragraph{Exposure ($A$ = treatment variable).}
+When $A$ is the exposure of interest, the biased coefficient for category $j$ becomes a weighted combination of true coefficients:
+\begin{equation}
+\label{eq:exposure}
+\text{plim}\;\hat{\beta}_j(A^*) = \sum_{k=1}^{K} w_{jk}\,\beta_k,
+\end{equation}
+where $w_{jk}$ depends on the confusion matrix $C$ and the population marginal $\pi_k = P(A{=}k)$. Unlike the binary case, where non-differential misclassification guarantees attenuation toward the null~\cite{brenner1993}, the $K{\geq}3$ case permits $w_{jk}$ to assign negative weight to categories with opposite-sign coefficients, producing \emph{sign reversal}. A near-permutation confusion matrix effectively swaps category labels, making sign reversal the dominant outcome (83.4\% under uniform Dirichlet prior). This failure mode is structurally impossible at $K{=}2$ because a $2{\times}2$ stochastic matrix with positive diagonal cannot reverse the sign of a single coefficient.
+
+\paragraph{Numerical Verification 2: Primary coefficient preservation.}
+Across 23 empirical LLM configurations, the primary coefficient (largest $|\beta_k|$) never reverses sign, while 61\% reverse a secondary coefficient. This reflects magnitude dominance: under 100{,}000 Dirichlet$(1,1,1)$ matrices with diagonal ${\geq}\,0.7$, primary sign-flip rate is 0\%; without a diagonal constraint, both coefficients flip ${\sim}50$\% (detailed breakdown in Appendix~\ref{app:exposure}).
+
+\paragraph{Mediation ($A$ = mediator).}
+When $A$ mediates the $X{\to}Y$ relationship~\cite{vanderweele2015explanation}, the direct effect estimator controlling for $A^*$ has probability limit
+\begin{equation}
+\label{eq:mediation}
+\text{plim}\;\hat{\tau}_{\text{direct}}(A^*) = \tau_{\text{direct}} + \bigl(1 - \lambda(C)\bigr)\,\tau_{\text{indirect}},
+\end{equation}
+where $\lambda(C) \in [0,1]$ under proportional effects (Appendix~\ref{app:proof}, Proposition~\ref{prop:lambda_bound}), with $\lambda(I) = 1$ under perfect classification. Misclassification ($\lambda < 1$) causes the residual indirect effect to be absorbed into the direct path estimate, producing upward bias in $|\hat{\tau}_{\text{direct}}|$ but preserving the sign ($\tau_{\text{sign\_flip}} = 0$).
+
+\paragraph{Collider, M-bias, and front-door.}
+Three topologies exhibit \emph{protective} or \emph{immune} behavior. \textbf{Collider:} conditioning on $A^*$ instead of $A$ attenuates the spurious path, so annotation error reduces collider bias ($\tau_{\text{sign\_flip}} = 0$). \textbf{M-bias:} in the M-shaped DAG~\cite{greenland2003}, misclassifying $A$ weakens the M-bias path; this topology is immune ($\text{ASV} = \infty$). For instance, annotator expertise ($U_1$) and topic difficulty ($U_2$) may independently affect both annotation quality and the treatment-outcome relationship, creating an M-shaped DAG. \textbf{Front-door:} the front-door estimator~\cite{bellemare_bloem2024} is attenuated in both $X \to A$ and $A \to Y$ stages, producing moderate bias with $\tau_{\text{sign\_flip}} = 0$.
+
+\paragraph{Instrumental variable ($A$ = instrument).}
+The Wald estimator~\cite{angrist_imbens1995} $\hat{\tau}_{\text{IV}} = \hat{\text{cov}}(A^*, Y) / \hat{\text{cov}}(A^*, X)$ has $C$ in the denominator. Misclassification can drive first-stage coefficients toward zero or reverse their sign, causing the ratio estimator to diverge or flip. Under random Dirichlet matrices, 52.6\% produce sign reversal, making IV the most fragile topology (detailed analysis including the Dirichlet subspace geometry in Appendix~\ref{sec:iv_dirichlet_subspace}).
+
+\paragraph{Structural sign-flip guarantee.}
+\begin{proposition}[Sign preservation---analytic results]
+\label{prop:signflip}
+Under non-differential misclassification with $C_{kk} > 0$ for all $k$:
+\emph{(a)}~Confounding preserves sign when $\operatorname{sign}(\tau) = \operatorname{sign}(\tau {+} B_{\mathrm{OV}})$, where $B_{\mathrm{OV}} {=} \operatorname{Cov}(g(A),f(A))/\operatorname{Var}(T)$ is the omitted-variable bias (Cauchy--Schwarz; Appendix~\ref{app:confounding}).
+\emph{(b)}~Collider preserves sign when $|\tau| > \sqrt{\operatorname{Var}(g)\operatorname{Var}(h)}/\mathbb{E}[\operatorname{Var}(T{\mid}A)]$ (Berkson attenuation; Appendix~\ref{app:collider}).
+\emph{(c)}~Exposure can produce sign reversal for $K {\geq} 3$, even with $C_{kk} {>} 0.5$ (counterexample in Appendix~\ref{app:exposure}).
+\end{proposition}
+
+Our theoretical results establish a three-tier hierarchy: (i)~analytically proved (Proposition~\ref{prop:signflip}(a,b), Theorem~\ref{thm:monotone}), (ii)~numerically verified with zero violations across 20{,}000+ random configurations (Observation~\ref{prop:monotone_general}, Numerical Verifications~1--2), and (iii)~conjectured with $\varepsilon$-approximate bounds (Conjecture~\ref{conj:monotone}).
+
+\paragraph{Numerical Verification 1: Non-exposure sign preservation.}
+Sign preservation holds under topology-specific conditions (mediation: $\operatorname{sign}(\tau_{\mathrm{dir}}) {=} \operatorname{sign}(\tau_{\mathrm{total}})$; front-door: $\operatorname{sign}(\lambda\alpha_U) {=} \operatorname{sign}(\lambda\alpha_U {+} \operatorname{Cov}(T,f(A)))$; M-bias: attenuating for all $C$). Verified across 100{,}000 random matrices with zero violations (Table~\ref{tab:sign_conditions}, Appendix~\ref{app:conditions}); analytic proofs for general $K$ remain open. Since these conditions involve true DGP parameters, the ASV framework (§\ref{sec:asv}) provides a complementary assessment.
+
+\subsection{Annotation Sensitivity Values}
+\label{sec:asv}
+
+How much annotation error can a study tolerate before conclusions change? We adapt the sensitivity analysis paradigm---E-values~\cite{vanderweele_ding2017} (the minimum confounding strength needed to explain away an observed effect), partial-$R^2$ bounds~\cite{cinelli2020making}---to $K{\times}K$ annotation error, defining Annotation Sensitivity Values (ASVs). Our approach: (1)~prove $\varepsilon$-approximate monotonicity along a 1D path $C(\delta)$ (Theorem~\ref{thm:monotone}), reducing the $K^2$-dimensional problem to a scalar threshold; (2)~define three ASV diagnostics addressing topology-dependent failure modes; (3)~combine ASVs with FWL invariance to route practitioners to topology-appropriate corrections.
+
+\paragraph{Parameterization.}
+We parameterize the confusion matrix as $C(\delta) = (1{-}\delta)I + \delta C_0$, where $C_0$ is a reference confusion matrix and $\delta \in [0,1]$ controls severity ($\delta{=}0$: perfect; $\delta{=}1$: matches $C_0$). Non-negativity requires $\delta \leq \delta_{\max} = \min_j 1/(1 - (C_0)_{jj}) \geq 1$; we recommend bootstrapping $C_0$ and reporting ASV confidence intervals (Appendix~\ref{sec:bootstrap_asv}).
+\paragraph{Three ASV types.}
+We define three complementary measures: (1)~\textbf{Magnitude ASV} $\delta^*_{\text{mag}} = \min\{\delta : |\text{plim}\;\hat{\tau}(C(\delta)) - \tau| > \epsilon\}$---analogous to E-values; (2)~\textbf{Significance ASV} $\delta^*_{\text{sig}} = \min\{\delta : |\text{plim}\;\hat{\tau}(C(\delta))| < z_{\alpha/2} \cdot SE(N)\}$---relevant for attenuating topologies; (3)~\textbf{Sign-flip ASV} $\delta^*_{\text{sf}} = \min\{\delta : \text{sign}(\hat{\tau}) \neq \text{sign}(\tau)\}$---exposure and IV only. The significance ASV depends on $N$ through $SE(N)$, exhibiting a sharp phase transition at a critical $N^*$ below which all rejections are blocked.
+
+\begin{theorem}[Envelope monotonicity---$K{=}2$]
+\label{thm:monotone}
+For $K{=}2$ confounding and mediation topologies with proportional effects ($f = \lambda g$ for some scalar $\lambda$) under $C(\delta) = (1{-}\delta)I + \delta C_0$ with $(C_0)_{jj} \geq \tfrac{1}{2}$, $|B(C(\delta))|$ is monotonically non-decreasing in $\delta \in [0,1]$.
+\end{theorem}
+
+The proof (Appendix~\ref{app:monotonicity_proof},~\ref{par:med_monotone}) exploits perspective function convexity; $(C_0)_{jj}{\geq}\tfrac{1}{2}$ excludes degenerate matrices. Proportional effects ($f = \lambda g$) holds when a single latent factor drives both paths---a natural assumption in CSS annotation tasks, where a single quality dimension typically governs both the treatment--covariate and mediator--outcome relationships. Under NLP-realistic DGP conditions, the out-of-bound rate drops to 0.07\% with zero sign failures (Table~\ref{tab:proportional_effects}); even under non-proportional effects with 23 real LLM matrices, sign preservation remains ${\geq}97.3$\% (Table~\ref{tab:proportional_empirical}). Failures concentrate in extreme asymmetric DGPs (Sparse: 24.2\% OOB) unlikely in balanced NLP classification. When $\lambda(C) \notin [0,1]$, Proposition~\ref{prop:conf_gen} provides a complementary bound ($|\tau| > \bar{B}$).
+
+\begin{observation}[Envelope monotonicity---$K{\geq}3$]
+\label{prop:monotone_general}
+For $K{\geq}3$ under the same conditions, numerical verification across 20{,}000 random $(C_0,p,g)$ triples per $K$ shows worst-case deviations are negligible ($\leq 0.013$; Table~\ref{tab:conjecture_verify} in Appendix~\ref{sec:conjecture_verify}).
+\end{observation}
+
+\begin{conjecture}[$\varepsilon$-approximate envelope monotonicity]
+\label{conj:monotone}
+For non-IV topologies under $C(\delta) = (1{-}\delta)I + \delta C_0$, $|B(C(\delta))|$ is monotonic up to $\varepsilon < 0.06$ deviations under default DGP parameters (collider/M-bias non-increasing, others non-decreasing; see Appendix~\ref{sec:conjecture_verify} for DGP-dependent bounds). Verified across 10{,}000 random matrices per topology for each $K \in \{3,5,7\}$ (210{,}000 total), $\tau \in \{0.1, 0.5, 1.0, 2.0, 5.0\}$.
+\end{conjecture}
+
+\begin{remark}[Structural distinctions from E-values]
+\label{rem:evalue}
+ASV diagnostics differ from E-values~\cite{vanderweele_ding2017} in three respects (Table~\ref{tab:sensitivity_comparison}, Appendix):
+\emph{(i)~Topology dependence}: the same $C$ preserves sign under confounding but can reverse it under exposure (Table~\ref{tab:taxonomy}), whereas E-values treat all confounding identically.
+\emph{(ii)~Sign-flip diagnostic}: E-values diagnose magnitude robustness but not sign reversal; the sign-flip ASV $\delta^*_{\mathrm{sf}}$ (Algorithm~\ref{alg:correction}) has no E-value counterpart.
+\emph{(iii)~Parametric structure}: ASV reduces $K^2$-dimensional confusion matrix space to one dimension via $C(\delta)$, but $B(\delta)$ is topology-specific and can be non-monotone (IV).
+\end{remark}
+
+For $K{=}2$, Theorem~\ref{thm:monotone} guarantees exact monotonicity; for $K{\geq}3$, monotonicity rests on numerical evidence (Conjecture~\ref{conj:monotone}), with ASV thresholds robust to $\varepsilon$-approximate deviations ($\varepsilon < 0.06$ under default DGP; Appendix~\ref{sec:conjecture_verify}). Sign-flip ASV $< 1$ flags sign-reversal-prone pairs; magnitude ASV $< \delta_{\text{observed}}$ indicates bias exceeds tolerance (Algorithm~\ref{alg:correction}). Rankings are stable across DGP parameterizations (Appendix~\ref{sec:asv_stability}); binarization introduces additional topology-dependent bias (Appendix~\ref{app:binarization}).
