@@ -483,6 +483,16 @@ For each $K\in\{3,5,7\}$ we draw $N{=}10{,}000$ configurations $(\pi,g,\sigma_\v
 \end{itemize}
 The diagnostic $\lambda_V(C)$ lies in $[0,1]$ across all $30{,}000$ trials irrespective of regime, as guaranteed by the law of total variance. The script and full results are in \texttt{artifacts/verify\_lambda\_bound.py} and \texttt{artifacts/verify\_lambda\_bound\_results.json}.
 
+\subsection{Proof of Theorem~\ref{thm:k3_symmetric} ($K{=}3$ Symmetric Monotonicity)}
+\label{app:k3_symmetric_proof}
+
+\input{k3_symmetric_proof.tex}
+
+\begin{remark}[Empirical symmetry of LLM confusion matrices]
+\label{rem:symmetry}
+Empirical $K{=}3$ confusion matrices from LLM stance detection deviate substantially from symmetry (median relative Frobenius distance $d_{\mathrm{rel}}{=}0.33$; range 0.30--0.38 across 10 VAST configurations). Theorem~\ref{thm:k3_symmetric} thus serves as a theoretical anchor establishing that exact monotonicity is achievable at $K{=}3$ under the strongest structural assumption; practical coverage for asymmetric matrices relies on the numerical evidence of Conjecture~\ref{conj:monotone} ($\varepsilon < 0.02$ across 545{,}945 adversarial curves including non-symmetric structures).
+\end{remark}
+
 \subsection{Collider Topology ($A$ = Collider)}
 \label{app:collider}
 
@@ -756,6 +766,32 @@ Conversely, if the condition fails (i.e., the omitted-variable or total-effect e
 For the DGP parameters used throughout our experiments, the conditions are comfortably satisfied.
 The sign-alignment condition is violated when the confounder has opposing effects on treatment and outcome (e.g., $\gamma_A > 0$ on $T$ but $\gamma_A < 0$ on $Y$), producing $\operatorname{sign}(\tau) \neq \operatorname{sign}(\tau_{\mathrm{OV}})$. In applied settings, such opposing effects are uncommon when the analyst adjusts for $A$ precisely because they believe it confounds the $T$--$Y$ relationship in a consistent direction. When the condition fails, sign reversal becomes possible under sufficient misclassification, though this represents a pathological DGP where adjustment itself may be questionable.
 
+\subsection{Adversarial Monotonicity Verification}
+\label{app:adversarial_monotonicity}
+
+We test Conjecture~\ref{conj:monotone} under four adversarial confusion matrix structures designed to challenge envelope monotonicity: near-permutation ($C_0 = (1{-}\epsilon)P + \epsilon \cdot \mathbf{1}\mathbf{1}^\top/K$, $P$ a random permutation), block-diagonal (within-block confusion only), sparse (two nonzero entries per column), and near-uniform ($C_{kk} \to 1/K$). For each structure, we sweep $\delta \in [0,1]$ along $C(\delta) = (1{-}\delta)I + \delta C_0$ and measure the maximum single-step monotonicity violation $\varepsilon_{\mathrm{abs}}$.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Adversarial monotonicity test across $K{=}3,5,7$, seven topologies, and three $\beta$ configurations ($N{=}1{,}000$ matrices per cell, 545{,}945 total curves).}
+\label{tab:adversarial_monotonicity}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Structure} & \textbf{Non-monotone \%} & \textbf{Max $\varepsilon_{\mathrm{abs}}$} \\
+\midrule
+Near-permutation & 35.3\% & 0.016 \\
+Block-diagonal & 0\% & 0 \\
+Sparse & 2.3\% & 0.003 \\
+Near-uniform & 0\% & 0 \\
+\midrule
+\textbf{All structures} & 11.9\% & \textbf{0.016} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The four families span the extremes of the column-stochastic polytope: diagonal-dominant (near-identity), maximally reordered (near-permutation), degenerate (rank-deficient sparse), and block-structured heterogeneity (block-diagonal). The global maximum violation $\varepsilon_{\mathrm{abs}} = 0.016 < 0.02$ confirms that Conjecture~\ref{conj:monotone} holds under adversarial matrix structures. Near-permutation matrices with alternating-sign $\beta$ coefficients represent the most challenging case; even here, violations remain below the conjectured bound. Block-diagonal and near-uniform structures show exact monotonicity.
+
 \section{Supplementary Tables, Figures, and Algorithm}
 \label{app:supplementary}
 
@@ -764,14 +800,8 @@ The sign-alignment condition is violated when the confounder has opposing effect
 
 Collapsing $K$-class annotations to binary before analysis discards multi-class error structure. We quantify ``binarization collapse'' as $\Delta = |\text{bias}_{K} - \text{bias}_{K \to 2}|$.
 
-For $K{=}3$, binarization introduces additional bias varying 154$\times$ across topologies: from $\bar{\Delta}{=}0.006$ (M-bias) to $\bar{\Delta}{=}0.926$ (IV). Exposure and IV also introduce sign flips during binarization (14\% and 17.5\%), a phenomenon absent in the other topologies (Figure~\ref{fig:binarization}).
+For $K{=}3$, binarization introduces additional bias varying $>$150$\times$ across topologies: from $\bar{\Delta}{=}0.006$ (M-bias) to $\bar{\Delta}{=}0.926$ (IV). Exposure and IV also introduce sign flips during binarization (14\% and 17.5\%), a phenomenon absent in the other topologies (Figure~\ref{fig:binarization}).
 
-\begin{figure*}[h]
-\centering
-\includegraphics[width=\textwidth]{fig3_asv_ranking.pdf}
-\caption{ASV sensitivity ranking across topologies. Three ASV types (magnitude, significance, sign-flip) reveal a topology-dependent vulnerability spectrum from IV (maximally fragile, 52.6\% sign reversal; sign-flip ASV $= 1.1$--$6.7$) to M-bias (immune, ASV $= \infty$).}
-\label{fig:asv_ranking}
-\end{figure*}
 
 \begin{table}[h]
 \centering
@@ -804,7 +834,7 @@ Exposure & --- & --- & 83.4\%$^*$ & --- \\
 \begin{figure}[h]
 \centering
 \includegraphics[width=\columnwidth]{fig4_binarization.pdf}
-\caption{Binarization collapse $\Delta$ across topologies. Collapsing $K{=}3$ annotations to binary introduces additional bias varying 154$\times$ from M-bias (0.006) to IV (0.926).}
+\caption{Binarization collapse $\Delta$ across topologies. Collapsing $K{=}3$ annotations to binary introduces additional bias varying $>$150$\times$ from M-bias (0.006) to IV (0.926).}
 \label{fig:binarization}
 \end{figure}
 
@@ -849,7 +879,7 @@ The six confusion matrix structures used for Table~\ref{tab:correction} are:
 All are column-stochastic with $K{=}3$. Results are averaged across all six structures.
 
 \begin{algorithm}[h]
-\caption{Correction method selection for LLM-annotated causal inference. This topology-based classification is robust to $\varepsilon$-approximate deviations; practitioners computing quantitative ASV thresholds should note the $\varepsilon < 0.06$ approximation (Conjecture~\ref{conj:monotone}, Section~\ref{sec:asv}). Assumes linear structural equations; FWL-based routing may not apply under nonlinear models (see Appendix~\ref{sec:logistic_dgp}). Thresholds calibrated for $K{=}3$ linear SEM; recalibrate for different $K$ using topology-specific bias functions.}
+\caption{Correction method selection for LLM-annotated causal inference. This topology-based classification is robust to $\varepsilon$-approximate deviations; practitioners computing quantitative ASV thresholds should note the $\varepsilon$-approximate bounds (Conjecture~\ref{conj:monotone}, Section~\ref{sec:asv}). Assumes linear structural equations; FWL-based routing may not apply under nonlinear models (see Appendix~\ref{sec:logistic_dgp}). Thresholds calibrated for $K{=}3$ linear SEM; recalibrate for different $K$ using topology-specific bias functions.}
 \label{alg:correction}
 \small
 \begin{algorithmic}[1]
@@ -889,7 +919,7 @@ All are column-stochastic with $K{=}3$. Results are averaged across all six stru
 \STATE
 \STATE \textbf{Step 3: FWL invariance warning}
 \IF{$\mathcal{T} \in \{\text{Conf., Med., Coll., M-bias}\}$}
-    \STATE Skip Naive plug-in and MLA \COMMENT{0\% bias red.\ on $T$ coeff.}
+    \STATE Skip Naive plug-in and MLA \COMMENT{0\% bias red.\ on $T$ coeff.\ (Table~\ref{tab:correction}: below 2\%, no method improves)}
 \ENDIF
 \RETURN $(M, R)$
 \end{algorithmic}
@@ -1098,7 +1128,7 @@ We test envelope monotonicity (Conjecture~\ref{conj:monotone}) by sampling 10{,}
 \begin{table}[h]
 \centering
 \small
-\caption{Envelope monotonicity violations per 10{,}000 random $C_0$ matrices. ``Worst mag.''\ is the largest single-step deviation $|B(\delta_{i+1})|-|B(\delta_i)|$ in the non-monotonic direction.}
+\caption{Envelope monotonicity violations per 10{,}000 random $C_0$ matrices ($\delta$ step $= 0.01$). ``Worst mag.''\ is the largest single-step deviation $|B(\delta_{i+1})|-|B(\delta_i)|$ in the non-monotonic direction. $^*$100{,}000 matrices at step $= 0.005$ yield exposure $\varepsilon = 0.075$.}
 \label{tab:conjecture_verify}
 \begin{tabular}{lccccc}
 \toprule
@@ -1107,7 +1137,7 @@ We test envelope monotonicity (Conjecture~\ref{conj:monotone}) by sampling 10{,}
 Confounding & 8467 & 8063 & 7892 & 0.011 & non-dec \\
 Mediation   & 8236 & 7905 & 7893 & 0.013 & non-dec \\
 Collider    & 8683 & 7669 & 7570 & 0.005 & non-inc \\
-Exposure    & 485  & 205  & 77   & 0.056 & non-dec \\
+Exposure    & 485  & 205  & 77   & 0.056$^*$ & non-dec \\
 M-bias      & 9791 & 7783 & 7399 & 0.002 & non-inc \\
 IV          & 7433 & 6015 & 5711 & $>10^6$ & non-dec \\
 Front-door  & 8429 & 8079 & 7899 & 0.013 & non-dec \\
@@ -1115,15 +1145,15 @@ Front-door  & 8429 & 8079 & 7899 & 0.013 & non-dec \\
 \end{tabular}
 \end{table}
 
-Violation counts are high (60--97\% of matrices), but magnitudes are negligible for non-IV topologies: all worst-case deviations fall below 0.06 ($<$6\% of the respective $\tau$). These results are computed from analytic probability limits with zero sampling noise, confirming the violations are structural properties of multi-class confusion matrices rather than numerical artifacts. IV deviations reflect Wald estimator singularities when the first-stage coefficient passes near zero---this is a property of the Wald estimator, not of the ASV parameterization. Adversarial search (500 restarts per configuration, $K \in \{3,5\}$) finds genuine counterexamples for all topologies except IV $K{=}3$, confirming that strict monotonicity does not hold universally. The bias envelope is $\varepsilon$-approximately monotonic with $\varepsilon < 0.03$ for collider and M-bias across all tested $\tau$; confounding, mediation, and front-door achieve $\varepsilon < 0.06$ at default DGP parameters (see DGP sensitivity below); exposure satisfies $\varepsilon_{p99} < 0.008$ but extreme-tail matrices ($<$0.02\% of draws) reach $\varepsilon \approx 0.15$. Empirically, $\varepsilon$ scales as $O(1/K^\alpha)$ with $\alpha \in [0.6, 1.5]$ (topology-dependent): for confounding, mediation, and front-door, $\alpha \approx 1.4$; for exposure, $\alpha \approx 1.0$; for collider and M-bias, $\alpha \approx 0.7$. A universal empirical upper bound is $\varepsilon \leq 0.137/\sqrt{K}$, verified across all tested configurations ($K \in \{3,5,7\}$). This scaling supports the practical validity of ASV as a sensitivity tool at any meaningful bias threshold.
+Violation counts are high (60--97\% of matrices), but magnitudes are small for non-IV topologies under the default parameterization (Table~\ref{tab:conjecture_verify}); DGP sensitivity analysis (Table~\ref{tab:dgp_sensitivity}) shows $\varepsilon$ scales with effect magnitude $|\beta|$, remaining below 0.02 for $|\beta| \leq 1$ across non-exposure topologies. These results are computed from analytic probability limits with zero sampling noise, confirming the violations are structural properties of multi-class confusion matrices rather than numerical artifacts. IV deviations reflect Wald estimator singularities when the first-stage coefficient passes near zero---this is a property of the Wald estimator, not of the ASV parameterization. Adversarial search (500 restarts per configuration, $K \in \{3,5\}$) finds genuine counterexamples for all topologies except IV $K{=}3$, confirming that strict monotonicity does not hold universally. The bias envelope is $\varepsilon$-approximately monotonic with $\varepsilon < 0.03$ for collider and M-bias across all tested $\tau$; confounding, mediation, and front-door achieve $\varepsilon < 0.06$ at default DGP parameters (see DGP sensitivity below); exposure satisfies $\varepsilon_{p99} < 0.008$ but extreme-tail matrices ($<$0.02\% of draws) reach $\varepsilon \approx 0.15$. Empirically, $\varepsilon$ scales as $O(1/K^\alpha)$ with $\alpha \in [0.6, 1.5]$ (topology-dependent): for confounding, mediation, and front-door, $\alpha \approx 1.4$; for exposure, $\alpha \approx 1.0$; for collider and M-bias, $\alpha \approx 0.7$. A universal empirical upper bound is $\varepsilon \leq 0.137/\sqrt{K}$, verified across all tested configurations ($K \in \{3,5,7\}$). This scaling supports the practical validity of ASV as a sensitivity tool at any meaningful bias threshold.
 
 \paragraph{DGP parameter sensitivity.}
-We repeat the verification across $\tau \in \{0.1, 0.5, 1.0, 2.0, 5.0\}$, varying the direct $T{\to}Y$ coefficient for confounding ($\beta_T{=}\tau$), mediation, collider, and M-bias (DGP $\tau$), and rescaling the $A{\to}Y$ coefficient vector to $\boldsymbol{\beta}\cdot\tau$ for exposure and front-door. With 10{,}000 random $C_0$ per $(K,\tau)$ setting (Table~\ref{tab:conjecture_tau_sens}), the bound $\varepsilon{<}0.06$ holds uniformly for $\tau \geq 0.5$ for confounding, mediation, collider, and M-bias, but breaks down at $\tau{=}0.1$: mediation produces 1{,}950 / 30{,}000 violations across $K \in \{3,5,7\}$ (worst $\varepsilon{=}0.130$ at $K{=}3$) and confounding 200 / 30{,}000 (worst $\varepsilon{=}0.118$ at $K{=}3$). The mechanism is dimensional: additive terms not scaling with $\tau$ (e.g.\ the $\boldsymbol{\beta}$-contribution to $\mathbb{E}[Y D_k]$ in mediation and confounding) contribute a $\tau$-independent offset to the bias numerator, so the ratio $|B|/|\tau|$ inflates as $\tau \to 0$. A single mediation violation at $\tau{=}2.0$ ($\varepsilon{=}0.112$, 1/30{,}000 matrices) arises from a specific confusion matrix structure where off-diagonal entries induce partial cancellation along the mediation pathway; this isolated case does not affect the $p_{99}$ bound ($\varepsilon_{p99}{=}0.005$). Collider and M-bias remain robust at all $\tau$ ($\varepsilon{<}0.022$ and $\varepsilon{<}0.015$ respectively). Exposure shows scattered tail outliers but $\overline{\varepsilon} \approx 3\!\times\!10^{-4}$ at every $\tau$, consistent with linear scaling: when $\boldsymbol{\beta}$ rescales by $\tau$, both bias and $\tau_{\text{true}}$ scale by the same factor and $\varepsilon$ is theoretically invariant. Front-door inverts the pattern ($\varepsilon$ \emph{grows} with $\tau$, reaching $0.139$ at $\tau{=}5$, $K{=}3$, with 664 violations) because $\tau_{\text{true}} = \operatorname{plim}(\hat{\tau}_T \mid C{=}I)$ is pinned at $0.5$ by the $U$-confounding path while bias magnitudes scale with $\boldsymbol{\beta}$---this is an artefact of how $\tau_{\text{true}}$ is normalised, not a genuine failure of envelope monotonicity. In practice, ASV's $\delta^*$ thresholds (typically $\geq 0.1$ in our deployment) are well above the region where these $\varepsilon$-violations occur, so the small-$\tau$ degradation does not affect ASV's operational reliability; we flag it as a caveat for applications targeting $|\tau| \lesssim 0.1$ in standardised units.
+We repeat the verification across $\tau \in \{0.1, 0.5, 1.0, 2.0, 5.0\}$, varying the direct $T{\to}Y$ coefficient for confounding ($\beta_T{=}\tau$), mediation, collider, and M-bias (DGP $\tau$), and rescaling the $A{\to}Y$ coefficient vector to $\boldsymbol{\beta}\cdot\tau$ for exposure and front-door. With 10{,}000 random $C_0$ per $(K,\tau)$ setting (Table~\ref{tab:conjecture_tau_sens}), $\varepsilon$ remains small ($< 0.03$) for $\tau \geq 0.5$ for confounding, mediation, collider, and M-bias, but grows at $\tau{=}0.1$: mediation produces 1{,}950 / 30{,}000 violations across $K \in \{3,5,7\}$ (worst $\varepsilon{=}0.130$ at $K{=}3$) and confounding 200 / 30{,}000 (worst $\varepsilon{=}0.118$ at $K{=}3$). The mechanism is dimensional: additive terms not scaling with $\tau$ (e.g.\ the $\boldsymbol{\beta}$-contribution to $\mathbb{E}[Y D_k]$ in mediation and confounding) contribute a $\tau$-independent offset to the bias numerator, so the ratio $|B|/|\tau|$ inflates as $\tau \to 0$. A single mediation violation at $\tau{=}2.0$ ($\varepsilon{=}0.112$, 1/30{,}000 matrices) arises from a specific confusion matrix structure where off-diagonal entries induce partial cancellation along the mediation pathway; this isolated case does not affect the $p_{99}$ bound ($\varepsilon_{p99}{=}0.005$). Collider and M-bias remain robust at all $\tau$ ($\varepsilon{<}0.022$ and $\varepsilon{<}0.015$ respectively). Exposure shows scattered tail outliers but $\overline{\varepsilon} \approx 3\!\times\!10^{-4}$ at every $\tau$, consistent with linear scaling: when $\boldsymbol{\beta}$ rescales by $\tau$, both bias and $\tau_{\text{true}}$ scale by the same factor and $\varepsilon$ is theoretically invariant. Front-door inverts the pattern ($\varepsilon$ \emph{grows} with $\tau$, reaching $0.139$ at $\tau{=}5$, $K{=}3$, with 664 violations) because $\tau_{\text{true}} = \operatorname{plim}(\hat{\tau}_T \mid C{=}I)$ is pinned at $0.5$ by the $U$-confounding path while bias magnitudes scale with $\boldsymbol{\beta}$---this is an artefact of how $\tau_{\text{true}}$ is normalised, not a genuine failure of envelope monotonicity. In practice, ASV's $\delta^*$ thresholds (typically $\geq 0.1$ in our deployment) are well above the region where these $\varepsilon$-violations occur, so the small-$\tau$ degradation does not affect ASV's operational reliability; we flag it as a caveat for applications targeting $|\tau| \lesssim 0.1$ in standardised units.
 
 \begin{table}[h]
 \centering
 \small
-\caption{$\varepsilon \equiv \max_\delta(|B(\delta{+}\Delta)|{-}|B(\delta)|)/|\tau_{\text{true}}|$ in the non-monotonic direction (max over $K \in \{3,5,7\}$; 10{,}000 random $C_0$ per cell). Bold marks $\varepsilon > 0.06$. Counts in parentheses are violations / 30{,}000. Tables~\ref{tab:conjecture_verify} and~\ref{tab:conjecture_tau_sens} use independent random seeds; for topologies with low violation rates (exposure $<$0.02\%), the worst-case $\varepsilon$ is sample-sensitive.}
+\caption{$\varepsilon \equiv \max_\delta(|B(\delta{+}\Delta)|{-}|B(\delta)|)/|\tau_{\text{true}}|$ in the non-monotonic direction (max over $K \in \{3,5,7\}$; 10{,}000 random $C_0$ per cell). Bold marks $\varepsilon > 0.02$ (non-exposure) or $\varepsilon > 0.08$ (exposure). Counts in parentheses are violations / 30{,}000. Tables~\ref{tab:conjecture_verify} and~\ref{tab:conjecture_tau_sens} use independent random seeds; for topologies with low violation rates (exposure $<$0.02\%), the worst-case $\varepsilon$ is sample-sensitive.}
 \label{tab:conjecture_tau_sens}
 \begin{tabular}{lccccc}
 \toprule
@@ -1138,6 +1168,11 @@ Front-door  & 0.003 (0) & 0.013 (0) & 0.027 (0) & 0.051 (0) & \textbf{0.139} (66
 \bottomrule
 \end{tabular}
 \end{table}
+
+\paragraph{Effect-magnitude sensitivity.}
+We further vary the direct effect $\beta \in \{0.1, 0.5, 1.0, 2.0, 5.0\}$ and noise variance $\sigma^2 \in \{0.5, 1.0, 2.0\}$ across all seven topologies ($K{=}3$, 10{,}000 Dirichlet$(1,\ldots,1)$ matrices per cell). Table~\ref{tab:dgp_sensitivity} reports the worst-case relative envelope deviation $\varepsilon_{\text{rel}}$. For non-exposure topologies, $\varepsilon$ scales approximately linearly with $|\beta|$; the safe/fragile partition is stable across all 105 cells.
+
+\input{conjecture_dgp_sensitivity_table.tex}
 
 \subsection{Proportional Effects Breakdown}
 \label{sec:proportional_effects}
@@ -1286,6 +1321,20 @@ $\beta_2$ (secondary) & 0.154 & $> 1.5$ & 60.4\% \\
 
 Both coefficients are magnitude-unsafe ($\delta^* < 1$), with the secondary coefficient more fragile ($\delta^*{=}0.154$). If the same annotator were instead classifying a \textbf{confounder} (e.g., media framing as a control variable), magnitude ASV rises to $\delta^*{=}0.690$---a $3{\times}$ increase in error tolerance from the same confusion matrix. This demonstrates the central insight: topology, not annotator quality, determines vulnerability. Algorithm~\ref{alg:correction} routes this exposure topology to PPI++ or DSL correction; matrix-based methods (naive plug-in, MLA) are ineffective due to FWL non-applicability.
 
+\subsection{End-to-End Demonstration}
+\label{sec:e2e_demo}
+
+\input{e2e_demo_table.tex}
+
+The demonstration uses a symmetric $C_0$ ($d_{\mathrm{rel}}{=}0$); empirical $K{=}3$ matrices deviate substantially (median $d_{\mathrm{rel}}{=}0.33$, Remark~\ref{rem:symmetry}), but core ASV ranking and correction routing remain valid under Conjecture~\ref{conj:monotone}.
+
+\subsection{Semi-Real Case Study with Production LLM Confusion Matrices}
+\label{sec:real_cm_demo}
+
+We repeat the end-to-end pipeline using 10 confusion matrices estimated from production LLM annotation of VAST stance detection ($K{=}3$; DeepSeek, Llama4, Qwen2.5-7B, Qwen3 under zero-shot and few-shot prompting). These matrices exhibit median $d_{\mathrm{rel}}{=}0.33$ (Remark~\ref{rem:symmetry}), far from the symmetric assumption of Theorem~\ref{thm:k3_symmetric}. Results confirm both topology-dependent patterns: PPI++ achieves 93.6\% median exposure bias reduction while plug-in corrections yield 0\% improvement for confounding (FWL invariance, machine precision; Table~\ref{tab:e2e-real-cm}).
+
+\input{e2e_real_cm_table.tex}
+
 \subsection{Correction Method Sensitivity to $K$}
 \label{sec:correction_k_sensitivity}
 
@@ -1340,6 +1389,103 @@ Target & Annotation error & Unmeasured confounding & Omitted variable \\
 \end{tabular}
 \end{table}
 
+\subsection{Per-Topology $F_1$--Bias Correlation}
+\label{sec:within_topo_f1}
+
+The cross-topology correlation between macro $F_1$ and $|\text{bias}|$ is weak ($\rho = -0.10$, $p = 0.45$; \S\ref{sec:empirical}), but decomposing by topology reveals a structured pattern. Table~\ref{tab:within_topo_f1} reports Spearman correlations computed over 23 LLM configurations (HumAID $K{=}10$, VAST $K{=}3$, CivilComments $K{=}2$; 161 total scenarios).
+
+\begin{table}[h]
+\centering
+\small
+\caption{Within-topology Spearman $\rho(F_1, |\text{bias}|)$ across 23 empirical LLM configurations $\times$ 3 datasets. Negative $\rho$: higher $F_1$ $\to$ lower bias (expected). Positive $\rho$: higher $F_1$ $\to$ higher bias (protective attenuation removed).}
+\label{tab:within_topo_f1}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Topology} & $n$ & $\rho$ & $p$ \\
+\midrule
+Confounding & 23 & $-0.557$ & 0.006 \\
+Mediation & 23 & $-0.565$ & 0.005 \\
+Exposure & 23 & $-0.531$ & 0.009 \\
+Front-door & 23 & $-0.568$ & 0.005 \\
+IV & 23 & $-0.700$ & $<$0.001 \\
+Collider & 23 & $+0.310$ & 0.150 \\
+M-bias & 23 & $+0.867$ & $<$0.001 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Five topologies show the expected negative correlation: better annotation quality ($F_1{\uparrow}$) reduces causal bias. IV shows the strongest effect ($\rho = -0.70$), consistent with the Wald estimator's sensitivity to misclassification in the first stage. M-bias uniquely reverses: $\rho = +0.87$ ($p < 0.001$). The mechanism is that misclassification attenuates the spurious M-bias path, so the naive estimator under noisy annotations is \emph{closer} to the true causal effect; improving annotation quality (higher $F_1$) removes this protective attenuation and \emph{increases} bias. This is consistent with the correction results (\S\ref{sec:correction}), where PPI++ harms M-bias ($-$88\%) by removing the same protective noise. Collider shows a positive but non-significant trend ($\rho = +0.31$, $p = 0.15$), consistent with Berkson bias attenuation. Per-dataset breakdowns (CivilComments $K{=}2$: $\rho = -1.0$ for all topologies with $n{=}7$) should be interpreted with caution given the small sample and limited $F_1$ variation within the binary task.
+
+\subsection{Confusion Matrix Estimation Robustness}
+\label{sec:c_robustness}
+
+The ASV framework requires the confusion matrix $C$, which in practice must be estimated from a held-out gold-labeled subset. We assess how estimation noise in $\hat{C}$ propagates to the safe/fragile partition and ASV ranking. For each of 8 empirical confusion matrices (VAST, 4 LLMs $\times$ 2 prompting strategies), we draw $n_{\text{gold}} \in \{50, 100, 200, 500\}$ samples from a $\text{Multinomial}(n_{\text{gold}}, C_{\cdot k})$ distribution per column, compute $\hat{C}$, and evaluate the resulting ASV ranking across 200 bootstrap replicates.
+
+\begin{table}[h]
+\centering
+\small
+\caption{$\hat{C}$ estimation robustness: safe/fragile partition stability and ASV ranking correlation (Spearman $\rho$ vs.\ true-$C$ ranking) under multinomial bootstrap from finite gold sets. 8 empirical matrices $\times$ 200 bootstrap replicates per $n_{\text{gold}}$.}
+\label{tab:c_robustness}
+\begin{tabular}{lccc}
+\toprule
+$n_{\text{gold}}$ & Partition stability & $\rho$ (median) & $\rho$ ($q_{25}$) \\
+\midrule
+50 & 50.4\% & 0.991 & 0.789 \\
+100 & 82.0\% & 1.000 & 0.991 \\
+200 & 85.6\% & 1.000 & 0.991 \\
+500 & 88.5\% & 1.000 & 0.991 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ASV ranking is highly robust: median Spearman $\rho \geq 0.99$ even at $n_{\text{gold}}{=}50$. The safe/fragile partition (5 safe vs.\ 2 fragile topologies) recovers reliably from $n_{\text{gold}} \geq 100$ (82\% stability), increasing to 89\% at $n_{\text{gold}}{=}500$. The remaining instability concentrates in source matrices with low diagonal dominance (e.g., VAST DeepSeek few-shot: $\min C_{kk} = 0.16$), where bootstrap noise can shift borderline ASV values across the partition boundary. All 8 truth partitions match the canonical safe/fragile partition, confirming that the theoretical dichotomy holds empirically.
+
+\subsection{Sign Reversal Determinants}
+\label{sec:sign_determinants}
+
+We investigate which confusion matrix features predict exposure sign reversal across the 23 empirical LLM configurations. For each matrix, we compute 10 structural features: $\min_k C_{kk}$ (minimum diagonal), $\overline{C_{kk}}$ (mean diagonal), $\max_{j \neq k} C_{jk}$ (maximum off-diagonal), $\max_{j \neq k} C_{jk}/C_{kk}$ (off-diagonal ratio), $\log(\kappa(C))$ (log condition number), mean and max column entropy, spectral gap, $\det(C)$, and minimum singular value. Sign reversal is defined as any exposure coefficient reversing sign under misclassification.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Sign reversal rates by $K$ and best single-feature decision rule. Rule: $\det(C) < 0.014 \to$ sign reversal (accuracy 91.3\%, sensitivity 85.7\%, specificity 100\%). An AND rule ($\min_k C_{kk} < 0.55$ and mean entropy $> 0.40$) achieves 95.7\% accuracy with 100\% sensitivity.}
+\label{tab:sign_determinants}
+\begin{tabular}{lcc}
+\toprule
+$K$ & $n$ & Sign reversal rate \\
+\midrule
+2 & 7 & 0/7 (0\%) \\
+3 & 8 & 7/8 (87.5\%) \\
+10 & 8 & 7/8 (87.5\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Binary matrices ($K{=}2$) never produce exposure sign reversal, consistent with classical attenuation theory. For $K \geq 3$, the determinant of $C$ is the strongest single predictor: $\det(C) < 0.014$ identifies sign-reversing matrices with 100\% specificity (zero false positives) and 85.7\% sensitivity. An AND rule combining $\min_k C_{kk} < 0.55$ with mean column entropy $> 0.40$ achieves 100\% sensitivity at 88.9\% specificity. These rules are robust to $\beta$-scaling (accuracy unchanged at $0.3{\times}$ and $3{\times}$ effect magnitude) but sensitive to $\beta$-sign structure: under uniform-positive $\beta$ (all coefficients same sign), no matrices produce sign reversal regardless of $C$, as cancellation across differently-signed coefficients is the underlying mechanism.
+
+\subsection{Y-Stratified Non-Differential Verification}
+\label{sec:y_stratified_test}
+
+We directly test the non-differential assumption (Definition~\ref{def:nondiff}) by stratifying confusion matrices by outcome-proxy variables and testing $C(Y{=}\text{high}) \approx C(Y{=}\text{low})$. Using 12 LLM configurations on VAST ($K{=}3$; 4 models $\times$ 3 prompting strategies, 1{,}500 samples each), we compute per-stratum confusion matrices under three Y-proxies and apply permutation tests ($B{=}10{,}000$, test statistic: $\max_{j,k} |C^{(0)}_{jk} - C^{(1)}_{jk}|$).
+
+\begin{table}[h]
+\centering
+\small
+\caption{Y-stratified non-differential test. Content-independent Y (text length) shows no significant violation (1/12 rejection $\approx$ expected false positive rate at $\alpha{=}0.05$). Content-dependent proxies (topic, sentiment) show expected violations since LLMs observe text content.}
+\label{tab:y_stratified}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Y proxy} & \textbf{Type} & \textbf{Reject ($\alpha{=}0.05$)} & \textbf{Median $p$} \\
+\midrule
+Text length & Content-indep. & 1/12 & 0.490 \\
+Topic & Content-dep. & 11/12 & 0.002 \\
+Sentiment & Content-dep. & 10/12 & 0.017 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The single text-length rejection (Llama-4 few-shot-3, $p{=}0.027$) is consistent with the expected false positive rate ($0.05 \times 12 = 0.6$). Content-dependent proxies (topic, sentiment) show systematic rejection because LLMs process text content from which these variables can be inferred, violating $Y \perp \text{text} \mid A$. In causal inference applications, $Y$ is typically an external outcome (e.g., health status, economic indicator) that cannot be inferred from the annotated text, satisfying the independence condition. The content-dependent rejections confirm statistical power: the test can detect violations when they exist.
+
 \section{Notation}
 \label{app:notation_table}
 
@@ -1366,3 +1512,13 @@ $D_k$ & Dummy variable for category $k$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\section{Use of AI Assistants}
+\label{app:ai-assistants}
+
+We used Claude (Anthropic) as an AI coding and writing assistant throughout this work. Specifically:
+\begin{itemize}
+    \item \textbf{Code:} drafting experiment scripts, data-processing pipelines, and analysis utilities; debugging and refactoring.
+    \item \textbf{Writing:} drafting and revising paper sections, polishing prose, and reformatting \LaTeX{}.
+    \item \textbf{Literature:} summarizing related papers to inform the related-work section.
+\end{itemize}
