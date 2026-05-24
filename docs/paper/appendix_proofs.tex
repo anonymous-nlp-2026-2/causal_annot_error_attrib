@@ -312,7 +312,7 @@ Exact monotonicity ($V_B'(\delta) \leq 0$ for all $\delta$) holds under the \emp
 \end{equation}
 where $\alpha_j = (C_0)_{jj}$ and $q_j = \sum_k (C_0)_{jk} p_k$. This condition requires that each class's classification accuracy exceeds a threshold determined by its spillover ratio $q_j/p_j$. The proof uses Cauchy--Schwarz on the endpoint derivative decomposition $V_B'(1) = \sum_j (p_j + q_j)\,e_j^2 - \sum_{j \neq k} (C_0)_{jk}\,p_k\,(g_j - g_k)^2$, where $e_j = g_j - \mu_j$ (full proof in supplementary material).
 
-For doubly stochastic $C_0$ with uniform $p$, condition~\eqref{eq:dd_condition} reduces to $\alpha_j \geq 1/2$, which for $K{=}2$ recovers the exact condition in Theorem~\ref{thm:monotone}. Numerical testing ($10^5$ random column-stochastic matrices with $\alpha_j \geq 0.5$) shows the condition holds in $99.3\%$ of cases; the $0.7\%$ violations arise exclusively under extreme class imbalance ($p_{\max}/p_{\min} > 300$) with maximum step deviation $< 0.001$. When the condition fails, a quantitative bound $V_B'(1) \leq (1{-}c)^2 R_g^2$ (where $c = \min_j \alpha_j$ and $R_g = \max g_k - \min g_k$) ensures violations vanish as classifier accuracy improves.
+For doubly stochastic $C_0$ with uniform $p$, condition~\eqref{eq:dd_condition} reduces to $\alpha_j \geq 1/2$, which for $K{=}2$ recovers the exact condition in Theorem~\ref{thm:monotone}. Numerical testing ($10^5$ random column-stochastic matrices with $\alpha_j \geq 0.5$) shows the condition holds in $99.3\%$ of cases; the $0.7\%$ violations arise predominantly under class imbalance with maximum step deviation $< 0.001$. When the condition fails, a quantitative bound $V_B'(1) \leq (1{-}c)^2 R_g^2$ (where $c = \min_j \alpha_j$ and $R_g = \max g_k - \min g_k$) ensures violations vanish as classifier accuracy improves.
 \end{remark}
 
 \subsection{Mediation Topology ($A$ = Mediator)}
@@ -792,7 +792,7 @@ We test Conjecture~\ref{conj:monotone} under four adversarial confusion matrix s
 \toprule
 \textbf{Structure} & \textbf{Non-monotone \%} & \textbf{Max $\varepsilon_{\mathrm{abs}}$} \\
 \midrule
-Near-permutation & 35.3\% & 0.016 \\
+Near-permutation & 35.4\% & 0.016 \\
 Block-diagonal & 0\% & 0 \\
 Sparse & 2.3\% & 0.003 \\
 Near-uniform & 0\% & 0 \\
