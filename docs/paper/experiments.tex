@@ -77,7 +77,7 @@ HumAID ($K{=}10$) matches predictions: IV (12.4--42.1\%) and exposure (9.0--17.4
 \subsection{Correction Guidance}
 \label{sec:correction}
 
-We evaluate five correction methods (naive plug-in, MLA, DSL~\cite{egami_hinck_stewart_wei2023}, MC-SIMEX~\cite{kuchenhoff2006simex}, PPI++~\cite{angelopoulos2023}) across all topologies (210 configurations; Table~\ref{tab:correction}, Appendix~\ref{app:supplementary}).
+We evaluate five correction methods (naive plug-in, MLA, DSL~\cite{egami_hinck_stewart_wei2023}, MC-SIMEX~\cite{kuchenhoff2006simex}, PPI++~\cite{angelopoulos2023}) across all topologies (210 configurations; Table~\ref{tab:correction}, Appendix~\ref{app:supplementary}). Regression calibration~\cite{carroll2006} is designed for continuous measurement error and does not apply to categorical misclassification.
 
 \paragraph{FWL invariance (observation).}
 FWL invariance implies matrix-based methods (naive plug-in, MLA) achieve 0\% bias reduction for covariate topologies (Appendix~\ref{app:fwl_proof}); under logistic regression this breaks but ranking persists ($|\Delta| < 0.02$; Appendix~\ref{sec:fwl_nonlinear}). To our knowledge, this futility result---that matrix-based corrections cannot reduce covariate-induced bias under FWL decomposition---has not been explicitly stated in the measurement error literature~\cite{carroll2006, buonaccorsi2010}.
