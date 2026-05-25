@@ -2,7 +2,7 @@
 """Patch plan_001_collider_mbias_iv.py: align violation metrics with mediation/frontdoor."""
 import sys
 
-P = '/home/sonny/causal_annot_error_attrib/plan_001_collider_mbias_iv.py'
+P = './plan_001_collider_mbias_iv.py'
 with open(P) as f:
     L = f.readlines()
 

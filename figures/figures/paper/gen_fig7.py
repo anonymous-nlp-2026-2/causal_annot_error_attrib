@@ -22,22 +22,36 @@ PROJ = Path(".")
 ART = PROJ / "artifacts"
 OUT = PROJ / "figures/paper/fig7_dirichlet_overlay.pdf"
 
+# === UNIFIED PAPER COLOR PALETTE ===
+COLOR_SAFE = '#154360'      # Deep navy — structural guarantee topologies
+COLOR_DANGER = '#922B21'    # Deep crimson — sign-flip topologies
+COLOR_NEUTRAL = '#1C2833'   # Near-black for text/axes
+COLOR_GRID = '#D5D8DC'      # Light gray for grids
+COLOR_ACCENT = '#B7950B'    # Burnished gold
+
 # ---------- global style ----------
 plt.rcParams.update({
-    "font.family": "DejaVu Sans",
-    "font.size": 10,
-    "axes.titlesize": 11,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 9,
-    "ytick.labelsize": 9,
-    "legend.fontsize": 8,
+    "font.family": "serif",
+    "font.size": 8,
+    "axes.titlesize": 9,
+    "axes.labelsize": 9,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    "legend.fontsize": 7,
     "figure.dpi": 300,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
-    "savefig.pad_inches": 0.05,
+    "savefig.pad_inches": 0.03,
     "axes.spines.top": False,
     "axes.spines.right": False,
-    "lines.linewidth": 1.6,
+    "axes.linewidth": 0.8,
+    "lines.linewidth": 1.4,
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+    "xtick.direction": "out",
+    "ytick.direction": "out",
+    "xtick.major.size": 3,
+    "ytick.major.size": 3,
 })
 
 # ---------- theoretical data (K=3 Dirichlet subspace) ----------
@@ -60,14 +74,10 @@ for t in ("0.0", "0.5", "0.7", "0.9"):
     IV_THEORY["sign_flip_rate"].append(iv_raw["thresholds"][t]["sign_flip_rate"])
 
 # ---------- empirical 14 configs ----------
-# (min_diag, dataset, model, prompt)  - 14 valid paper configs
-# HumAID (K=10): full 10x10 CM
 with open(ART / "plan006/asv_empirical_results.json") as f:
     plan006 = json.load(f)
 HUMAID_CMS = plan006["confusion_matrices"]
 
-# VAST and CivilComments diagonals extracted from plan006_full filter pipeline
-# (vast: from plan006_full_filtered_stats.json["filtered_stats"]["vast_per_class_recall"])
 VAST_DIAG = {
     "qwen2.5-7b_zero-shot":   [0.4613733905579399, 0.847457627118644,   0.10956175298804781],
     "qwen2.5-7b_few-shot-3":  [0.4132762312633833, 0.8210922787193974,  0.1254980079681275],
@@ -80,7 +90,6 @@ CIVIL_DIAG = {
 }
 
 PAPER_CONFIGS = []
-# humaid 8 (exclude qwen3_few-shot-5 which is all zeros)
 HUMAID_KEYS = [
     "humaid_llama4_zero-shot",
     "humaid_llama4_few-shot-3",
@@ -115,18 +124,15 @@ for k, diag in CIVIL_DIAG.items():
 assert len(PAPER_CONFIGS) == 14, f"expected 14, got {len(PAPER_CONFIGS)}"
 
 # ---------- marker / color encoding ----------
-# HumAID circles, blue shades by model
-# VAST squares, orange
-# CivilComments triangles, green
 HUMAID_COLOR = {
-    "llama4":   "#A6CEE3",   # light blue
-    "qwen3":    "#1F78B4",   # mid blue
-    "deepseek": "#08306B",   # dark blue
+    "llama4":   "#1B4F72",   # Royal navy
+    "qwen3":    "#117A65",   # Dark emerald teal
+    "deepseek": "#154360",   # Deep navy
 }
 DATASET_STYLE = {
-    "humaid":         {"marker": "o", "size": 55},
-    "vast":           {"marker": "s", "color": "#E6550D", "size": 55},
-    "civil_comments": {"marker": "^", "color": "#2CA25F", "size": 70},
+    "humaid":         {"marker": "o", "size": 45},
+    "vast":           {"marker": "s", "color": "#922B21", "size": 45},   # Dark crimson
+    "civil_comments": {"marker": "^", "color": "#117A65", "size": 55},   # Dark emerald
 }
 
 
@@ -161,33 +167,32 @@ def draw_panel(ax, theory, panel_title, panel_letter, *, show_violation_fill=Tru
     xx, vr_curve = smooth_curve(xs_t, vr_t)
     _,  sf_curve = smooth_curve(xs_t, sf_t)
 
-    # Theory: violation zone (gray fill above 0) + sign-flip dashed line
+    # Theory: violation zone (fill) + sign-flip dashed line
     if show_violation_fill:
         ax.fill_between(
             xx, 0, vr_curve,
-            color="#888888", alpha=0.18, zorder=1,
+            color=COLOR_NEUTRAL, alpha=0.10, zorder=1,
             label="Violation rate (theory)",
         )
-        ax.plot(xx, vr_curve, color="#666666", linewidth=1.2, zorder=2)
+        ax.plot(xx, vr_curve, color=COLOR_NEUTRAL, linewidth=1.2, zorder=2)
     else:
-        # IV violation_rate is trivially 1.0; show as flat ceiling line w/o fill
-        ax.axhline(1.0, color="#888888", linewidth=1.0, alpha=0.5, zorder=1,
+        ax.axhline(1.0, color=COLOR_NEUTRAL, linewidth=0.9, alpha=0.5, zorder=1,
                    label="Violation rate (theory) $=1$")
-    ax.plot(xx, sf_curve, color="#B22222", linewidth=1.4,
+    ax.plot(xx, sf_curve, color=COLOR_DANGER, linewidth=1.4,
             linestyle="--", zorder=3,
             label="Sign-flip rate (theory)")
 
-    # Theory anchor points (small ticks at 0.0, 0.5, 0.7, 0.9)
-    ax.scatter(xs_t, vr_t, s=18, color="#666666",
-               marker="x", linewidth=1.0, zorder=4, label="_nolegend_")
-    ax.scatter(xs_t, sf_t, s=18, color="#B22222",
-               marker="x", linewidth=1.0, zorder=4, label="_nolegend_")
+    # Theory anchor points
+    ax.scatter(xs_t, vr_t, s=16, color=COLOR_NEUTRAL,
+               marker="x", linewidth=0.9, zorder=4, label="_nolegend_")
+    ax.scatter(xs_t, sf_t, s=16, color=COLOR_DANGER,
+               marker="x", linewidth=0.9, zorder=4, label="_nolegend_")
 
     # Safe / danger zone shading
-    ax.axvspan(0.9, 1.0, color="#2CA25F", alpha=0.07, zorder=0)
-    ax.axvspan(0.0, 0.5, color="#E6550D", alpha=0.07, zorder=0)
+    ax.axvspan(0.9, 1.0, color=COLOR_SAFE, alpha=0.06, zorder=0)
+    ax.axvspan(0.0, 0.5, color=COLOR_DANGER, alpha=0.04, zorder=0)
 
-    # Empirical points: Y = interp(violation_rate at min_diag)
+    # Empirical points
     handled = set()
     for cfg in PAPER_CONFIGS:
         x = cfg["min_diag"]
@@ -218,38 +223,42 @@ def draw_panel(ax, theory, panel_title, panel_letter, *, show_violation_fill=Tru
 
     # Zone annotations
     txt_safe = ax.text(
-        0.95, 0.04, "safe\nzone", ha="center", va="bottom",
-        fontsize=7.5, color="#1B7A45", fontstyle="italic",
+        0.93, 0.06, "safe", ha="center", va="bottom",
+        fontsize=7, color=COLOR_SAFE, fontstyle="italic",
         transform=ax.transAxes,
     )
     txt_safe.set_path_effects([pe.withStroke(linewidth=2.0, foreground="white")])
     txt_danger = ax.text(
-        0.05, 0.45, "danger\nzone", ha="left", va="center",
-        fontsize=7.5, color="#A53A0C", fontstyle="italic",
+        0.07, 0.42, "danger", ha="left", va="center",
+        fontsize=7, color=COLOR_DANGER, fontstyle="italic",
         transform=ax.transAxes,
     )
     txt_danger.set_path_effects([pe.withStroke(linewidth=2.0, foreground="white")])
 
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(-0.02, 1.12)
-    ax.set_xlabel(r"min diagonal dominance  $\min_k C_{kk}$")
+    ax.set_xlabel(r"$\min_k C_{kk}$", fontsize=9)
     if panel_letter == "a":
-        ax.set_ylabel("Rate (theory) / dot Y = violation rate")
-    ax.set_title(f"({panel_letter}) {panel_title}", loc="left", pad=4)
-    ax.grid(True, axis="y", alpha=0.25, linewidth=0.5, zorder=0)
+        ax.set_ylabel("Rate", fontsize=9)
+    ax.set_title(f"({panel_letter}) {panel_title}", loc="left", pad=3,
+                 fontsize=9, fontweight='normal')
+    ax.grid(True, axis="y", alpha=0.10, linewidth=0.5, color=COLOR_GRID, zorder=0)
 
 
-# ---------- build figure ----------
-fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.6), sharey=True)
+# ---------- build figure (side-by-side, compact for single column) ----------
+fig, axes = plt.subplots(1, 2, figsize=(3.4, 2.4), sharey=True)
 
 draw_panel(axes[0], EXPOSURE_THEORY,
-           "Exposure topology", "a",
+           "Exposure", "a",
            show_violation_fill=True)
 draw_panel(axes[1], IV_THEORY,
-           "IV topology", "b",
+           "IV", "b",
            show_violation_fill=False)
 
-# Unified legend across both panels (de-duplicate)
+# Compact spacing
+plt.subplots_adjust(wspace=0.12)
+
+# Unified legend below both panels
 handles, labels = [], []
 for ax in axes:
     h, l = ax.get_legend_handles_labels()
@@ -258,20 +267,15 @@ for ax in axes:
             handles.append(hh); labels.append(ll)
 fig.legend(
     handles, labels,
-    loc="lower center", bbox_to_anchor=(0.5, -0.04),
-    ncol=4, frameon=False, columnspacing=1.2, handletextpad=0.5,
+    loc="lower center", bbox_to_anchor=(0.5, -0.18),
+    ncol=3, frameon=True, framealpha=0.85, edgecolor='none',
+    columnspacing=0.8, handletextpad=0.4, fontsize=7,
 )
 
-fig.suptitle(
-    r"Theory (random $K{=}3$ $C$) vs. practice"
-    r" (14 LLM-annotated configs, $K\in\{2,3,10\}$)",
-    fontsize=10, y=1.01,
-)
-
-plt.tight_layout(rect=(0, 0.02, 1, 0.98))
+plt.tight_layout(rect=(0, 0.0, 1, 1.0))
 OUT.parent.mkdir(parents=True, exist_ok=True)
-plt.savefig(OUT)
-plt.savefig(str(OUT).replace(".pdf", ".png"))
+plt.savefig(OUT, bbox_inches='tight', pad_inches=0.03)
+plt.savefig(str(OUT).replace(".pdf", ".png"), bbox_inches='tight', pad_inches=0.03)
 plt.close()
 print(f"Saved: {OUT}")
 print(f"Saved: {str(OUT).replace('.pdf', '.png')}")

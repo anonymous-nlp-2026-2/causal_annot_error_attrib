@@ -120,7 +120,7 @@ ax.legend(handles=leg_elements, loc='lower right', fontsize=8, framealpha=0.9)
 plt.tight_layout()
 
 # ── Save ────────────────────────────────────────────────────────────────
-out_base = '/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib/figures/paper/fig4_binarization'
+out_base = './figures/paper/fig4_binarization'
 fig.savefig(f'{out_base}.pdf', bbox_inches='tight', dpi=300, pad_inches=0.1)
 fig.savefig(f'{out_base}.png', bbox_inches='tight', dpi=300, pad_inches=0.1)
 print(f'Saved: {out_base}.pdf and .png')

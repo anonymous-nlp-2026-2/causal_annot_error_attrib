@@ -28,7 +28,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Import plan_006 for DGP / plim infrastructure
 # ---------------------------------------------------------------------------
-PROJ = Path("/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib")
+PROJ = Path(".")
 sys.path.insert(0, str(PROJ))
 spec = importlib.util.spec_from_file_location("plan_006", str(PROJ / "plan_006_asv_empirical.py"))
 plan_006 = importlib.util.module_from_spec(spec)

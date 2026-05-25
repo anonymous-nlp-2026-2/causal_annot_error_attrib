@@ -45,7 +45,7 @@ from pathlib import Path
 import numpy as np
 
 # ── Paths ──────────────────────────────────────────────────────────────────
-PROJ_ROOT = Path("/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib")
+PROJ_ROOT = Path(".")
 ARTIFACTS = PROJ_ROOT / "artifacts"
 CMS_PATH = ARTIFACTS / "plan011_frontier_cms.json"
 VAST_TEST = ARTIFACTS / "plan011_frontier_annotations" / "data" / "vast" / "test.jsonl"

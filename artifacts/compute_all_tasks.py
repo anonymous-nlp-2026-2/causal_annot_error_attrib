@@ -16,7 +16,7 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 
-PROJ = Path("/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib")
+PROJ = Path(".")
 sys.path.insert(0, str(PROJ))
 
 # Import the plan_006 module for DGP generators matching the paper's setup

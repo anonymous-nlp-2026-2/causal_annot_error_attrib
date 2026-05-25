@@ -39,7 +39,7 @@ print = functools.partial(print, flush=True)
 # Import DGP generators from plan_006
 # ============================================================================
 
-PROJ = Path("/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib")
+PROJ = Path(".")
 sys.path.insert(0, str(PROJ))
 import importlib.util
 spec = importlib.util.spec_from_file_location("plan_006", str(PROJ / "plan_006_asv_empirical.py"))

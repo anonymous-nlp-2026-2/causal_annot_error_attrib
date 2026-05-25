@@ -6,7 +6,7 @@ import csv
 import os
 from collections import Counter
 
-BASE = "/home/sonny/causal_annot_error_attrib/data"
+BASE = "./data"
 
 
 def write_jsonl(records, path):

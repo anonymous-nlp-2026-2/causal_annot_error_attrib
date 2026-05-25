@@ -41,7 +41,7 @@ from ranking_stability import (  # noqa: E402
 )
 
 # ──────────────────────────────────────────────────────────────────────────
-EMP_PATH = '/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib/artifacts/updated_empirical_results.json'
+EMP_PATH = './artifacts/updated_empirical_results.json'
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUT_PATH = os.path.join(OUT_DIR, 'c_estimation_robustness_results.json')
 
