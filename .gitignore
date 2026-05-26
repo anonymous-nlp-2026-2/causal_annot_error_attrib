@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+docs/paper/main.aux
+docs/paper/main.bbl
+docs/paper/main.blg
+docs/paper/main.fdb_latexmk
+docs/paper/main.fls
+docs/paper/main.log
+docs/paper/main.out
+docs/paper/main.synctex.gz
+docs/paper/_figure_backups/
+docs/paper/_pdf_images/
+*.aux.pass*

@@ -1,20 +1,50 @@
 #!/usr/bin/env python3
-"""Generate fig4_binarization: Binarization collapse Δ across 6 topologies.
+"""Generate fig4_binarization: Binarization collapse delta across 6 topologies.
 
 Narrative intent: Collapsing K=3 to binary is a dangerous shortcut —
-Δ varies 150x from M-bias (0.006) to IV (0.926), and sign flips
+delta varies >145x from M-bias (0.006) to IV (0.926), and sign flips
 emerge in exposure + IV.
 
 Data source: registry plan008_binarization_collapse (100k Dirichlet samples).
 """
+import os
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
+# === UNIFIED PAPER COLOR PALETTE ===
+COLOR_SAFE = '#154360'      # Deep navy — structural guarantee topologies
+COLOR_DANGER = '#922B21'    # Deep crimson — sign-flip topologies
+COLOR_NEUTRAL = '#1C2833'   # Near-black for text/axes
+COLOR_GRID = '#D5D8DC'      # Light gray for grids
+
+plt.rcParams.update({
+    'font.family': 'serif',
+    'font.size': 8,
+    'axes.titlesize': 9,
+    'axes.labelsize': 9,
+    'xtick.labelsize': 8,
+    'ytick.labelsize': 8,
+    'legend.fontsize': 7,
+    'figure.dpi': 300,
+    'savefig.dpi': 300,
+    'savefig.bbox': 'tight',
+    'savefig.pad_inches': 0.03,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'axes.linewidth': 0.8,
+    'pdf.fonttype': 42,
+    'ps.fonttype': 42,
+    'lines.linewidth': 1.5,
+    'xtick.direction': 'out',
+    'ytick.direction': 'out',
+    'xtick.major.size': 3,
+    'ytick.major.size': 3,
+})
+
 # ── Data from registry (plan008_binarization_collapse) ─────────────────
-# Sorted by Δ_mean ascending for visual impact
+# Sorted by D_mean ascending for visual impact
 
 data = {
     'M-bias':      {'D_mean': 0.0063, 'D_med': 0.0054, 'D_P95': 0.0147, 'D_max': 0.0328,
@@ -35,93 +65,92 @@ topos = list(data.keys())
 n = len(topos)
 y_pos = np.arange(n)
 
-# Colors
-C_LOW  = '#0072B2'   # blue — low collapse
-C_HIGH = '#D55E00'   # vermillion — high collapse
-C_MED  = '#E69F00'   # orange — medium
-C_DANGER = '#FFF0E0'
-C_SAFE   = '#E8F5E8'
+# Safe topologies (first 4) get deep navy, dangerous (last 2) get deep crimson
+SAFE_TOPOS = {'M-bias', 'Collider', 'Confounding', 'Mediation'}
 
-def get_color(d_mean):
-    if d_mean < 0.02:
-        return C_LOW
-    elif d_mean < 0.1:
-        return C_MED
-    else:
-        return C_HIGH
+def get_color(topo):
+    return COLOR_SAFE if topo in SAFE_TOPOS else COLOR_DANGER
 
-fig, ax = plt.subplots(figsize=(8, 4.5))
+def get_marker(topo):
+    return 'o' if topo in SAFE_TOPOS else 'D'
 
-# Background danger band
-ax.axvspan(0.05, 2.5, color=C_DANGER, alpha=0.3, zorder=0)
-ax.axvspan(0, 0.05, color=C_SAFE, alpha=0.3, zorder=0)
-ax.axvline(x=0.05, color='gray', linestyle=':', linewidth=0.8, alpha=0.7, zorder=1,
-           label='Δ = 0.05 (practical threshold)')
+# ── Figure: single-column width ───────────────────────────────────────
+fig, ax = plt.subplots(figsize=(3.3, 2.3))
+
+# Background bands
+ax.axvspan(0.05, 2.5, color=COLOR_DANGER, alpha=0.04, zorder=0)
+ax.axvspan(0, 0.05, color=COLOR_SAFE, alpha=0.04, zorder=0)
+ax.axvline(x=0.05, color=COLOR_NEUTRAL, linestyle=':', linewidth=0.7, alpha=0.5, zorder=1)
 
 for i, topo in enumerate(topos):
     d = data[topo]
-    color = get_color(d['D_mean'])
+    color = get_color(topo)
+    marker = get_marker(topo)
 
     # Range bar: median to P95
     ax.plot([d['D_med'], d['D_P95']], [y_pos[i], y_pos[i]],
-            color=color, linewidth=2.5, zorder=3, alpha=0.6)
+            color=color, linewidth=2.2, zorder=3, alpha=0.6)
 
     # Extend thin line to max
     ax.plot([d['D_P95'], d['D_max']], [y_pos[i], y_pos[i]],
-            color=color, linewidth=1, zorder=3, alpha=0.4)
+            color=color, linewidth=0.8, zorder=3, alpha=0.35)
 
-    # Mean marker
-    ax.plot(d['D_mean'], y_pos[i], 'o', color=color, markersize=9, zorder=4,
-            markeredgecolor='white', markeredgewidth=1)
+    # Tick marks at median and max
+    tick_h = 0.18
+    ax.vlines(d['D_med'], y_pos[i] - tick_h, y_pos[i] + tick_h,
+              color=color, lw=1.2, zorder=3)
+    ax.vlines(d['D_max'], y_pos[i] - tick_h, y_pos[i] + tick_h,
+              color=color, lw=0.8, zorder=3, alpha=0.4)
 
-    # Median marker (smaller)
-    ax.plot(d['D_med'], y_pos[i], '|', color=color, markersize=12, zorder=4,
-            markeredgewidth=2)
+    # Mean marker — circles for safe, diamonds for danger
+    ax.plot(d['D_mean'], y_pos[i], marker=marker, color=color, markersize=5.5, zorder=5,
+            markeredgecolor='white', markeredgewidth=0.7)
 
-    # Numeric label
-    label = f"Δ̄={d['D_mean']:.3f}"
+    # Numeric label — ensure clear separation from marker
+    label = f"$\\bar{{\\Delta}}$={d['D_mean']:.3f}"
     if d['sign_flip'] > 0:
-        label += f"  ⚠ {d['sign_flip']*100:.0f}% sign flip"
-    ax.text(d['D_max'] + 0.03, y_pos[i], label,
-            va='center', ha='left', fontsize=8.5, color=color, fontweight='bold')
+        label += f" [{d['sign_flip']*100:.0f}% flip]"
+    text_x = max(d['D_max'] + 0.05, d['D_mean'] + 0.18)
+    ax.text(text_x, y_pos[i], label,
+            va='center', ha='left', fontsize=6.5, color=color, fontweight='bold')
 
 ax.set_yticks(y_pos)
-ax.set_yticklabels(topos, fontsize=10)
-ax.set_xlabel('Binarization collapse Δ = |bias$_{K=3}$ − bias$_{K→2}$|', fontsize=10)
-ax.set_xlim(-0.02, 2.5)
+ax.set_yticklabels(topos, fontsize=8)
+ax.set_xlabel(r'Binarization collapse $\Delta = |\mathrm{bias}_{K=3} - \mathrm{bias}_{K \to 2}|$', fontsize=9)
+ax.set_xlim(-0.08, 2.35)
 ax.invert_yaxis()
 
-# 150x annotation
-ax.annotate('150×', xy=(0.926, 5), xytext=(0.926, 0),
-            fontsize=14, fontweight='bold', color=C_HIGH, alpha=0.3,
-            ha='center', va='center',
-            arrowprops=dict(arrowstyle='<->', color=C_HIGH, alpha=0.3, lw=1.5))
+# Subtle horizontal grid
+ax.grid(True, axis='x', alpha=0.10, linewidth=0.5, color=COLOR_GRID, zorder=0)
 
-ax.set_title('Binarization Collapse Across DAG Topologies\n'
-             'Collapsing K=3 → binary introduces topology-dependent bias',
-             fontsize=11, fontweight='bold', loc='left')
+# 150x annotation — between M-bias and IV, positioned to avoid legend
+ax.annotate('', xy=(0.926, 5), xytext=(0.926, 0),
+            arrowprops=dict(arrowstyle='<->', color=COLOR_DANGER, alpha=0.6, lw=1.2))
+ax.text(1.05, 2.5, '147×', fontsize=10, fontweight='bold', color=COLOR_DANGER,
+        alpha=0.8, ha='left', va='center')
 
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 
-# Legend
+# Legend — compact, inside plot
 leg_elements = [
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=C_LOW, markersize=8,
-               label='Low collapse (Δ̄ < 0.02)'),
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=C_MED, markersize=8,
-               label='Medium (0.02 ≤ Δ̄ < 0.1)'),
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=C_HIGH, markersize=8,
-               label='High collapse (Δ̄ ≥ 0.1)'),
-    plt.Line2D([0], [0], color='gray', linestyle=':', linewidth=1,
-               label='Practical threshold (Δ = 0.05)'),
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=COLOR_SAFE, markersize=6,
+               markeredgecolor='white', markeredgewidth=0.6,
+               label='Safe topologies'),
+    plt.Line2D([0], [0], marker='D', color='w', markerfacecolor=COLOR_DANGER, markersize=6,
+               markeredgecolor='white', markeredgewidth=0.6,
+               label='Dangerous topologies'),
+    plt.Line2D([0], [0], color=COLOR_NEUTRAL, linestyle=':', linewidth=0.8,
+               label=r'$\Delta = 0.05$ threshold'),
 ]
-ax.legend(handles=leg_elements, loc='lower right', fontsize=8, framealpha=0.9)
+ax.legend(handles=leg_elements, loc='upper center', bbox_to_anchor=(0.5, -0.22),
+          ncol=3, fontsize=6.5, frameon=False, handletextpad=0.3, columnspacing=0.8)
 
 plt.tight_layout()
 
 # ── Save ────────────────────────────────────────────────────────────────
-out_base = './figures/paper/fig4_binarization'
-fig.savefig(f'{out_base}.pdf', bbox_inches='tight', dpi=300, pad_inches=0.1)
-fig.savefig(f'{out_base}.png', bbox_inches='tight', dpi=300, pad_inches=0.1)
+out_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fig4_binarization')
+fig.savefig(f'{out_base}.pdf', bbox_inches='tight', dpi=300, pad_inches=0.03)
+fig.savefig(f'{out_base}.png', bbox_inches='tight', dpi=300, pad_inches=0.03)
 print(f'Saved: {out_base}.pdf and .png')
 plt.close()

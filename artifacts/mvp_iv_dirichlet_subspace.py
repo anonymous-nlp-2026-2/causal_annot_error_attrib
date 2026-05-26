@@ -31,7 +31,7 @@ from pathlib import Path
 
 import numpy as np
 
-PROJ = Path(".")
+PROJ = Path("/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib")
 sys.path.insert(0, str(PROJ))
 
 from annot_sensitivity.bias import _precompute

@@ -352,7 +352,7 @@ def main():
         "results": results,
     }
 
-    base_dir = "./artifacts"
+    base_dir = "/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib/artifacts"
     json_path = f"{base_dir}/nondiff_stress_test_results.json"
     tex_path = f"{base_dir}/nondiff_stress_test_appendix.tex"
 

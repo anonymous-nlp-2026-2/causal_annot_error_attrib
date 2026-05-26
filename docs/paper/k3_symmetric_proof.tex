@@ -7,10 +7,10 @@ $V_B(\delta)=\operatorname{Var}\bigl(\mathbb{E}[g(A)\mid A^*_\delta]\bigr)$.
 
 \paragraph{Step 1: Structural reduction.}
 The symmetric $C_0$ decomposes as $C_0=(1{-}3c)\,I+c\,\mathbf{1}\mathbf{1}^\top$, so
-\[
-  C(\delta) = (1{-}\delta)I + \delta\bigl[(1{-}3c)\,I+c\,\mathbf{1}\mathbf{1}^\top\bigr]
+\begin{multline*}
+  C(\delta) = (1{-}\delta)I + \delta\bigl[(1{-}3c)\,I+c\,\mathbf{1}\mathbf{1}^\top\bigr]\\
   = (1{-}3c\delta)\,I + c\delta\,\mathbf{1}\mathbf{1}^\top.
-\]
+\end{multline*}
 Setting $s=c\delta\in[0,c]$, each entry is
 $C(\delta)_{j\ell}=(1{-}3s)\,\mathbf{1}_{j=\ell}+s$,
 so $C(\delta)$ stays in the one-parameter symmetric family.
@@ -37,7 +37,7 @@ At $s{=}\tfrac{1}{3}$: $V_B(\tfrac{1}{3})=0$.
 Differentiating~\eqref{eq:k3VB} via the product rule:
 \begin{equation}
   \frac{dV_B}{ds}
-  = (1{-}3s)\sum_{j=0}^{2}\frac{p_j^2\,h_j^2}{q_j^2}\;\bigl[\underbrace{-3(1{-}3s)\,p_j - 1 - 3s}_{\displaystyle\Lambda_j(s)}\bigr].
+  = (1{-}3s)\!\sum_{j=0}^{2}\!\frac{p_j^2 h_j^2}{q_j^2}\!\bigl[\underbrace{-3(1{-}3s)p_j\!-\!1\!-\!3s}_{\Lambda_j(s)}\bigr].
   \label{eq:k3dVB}
 \end{equation}
 
@@ -48,16 +48,17 @@ Since $q_j'(s)=1{-}3p_j$, we have $F'(s)=\sum_j p_j^2 h_j^2(3p_j{-}1)/q_j^2$.
 Combining:
 \begin{align*}
   V_B'
-  &= (1{-}3s)\Bigl[-6\sum_j \frac{p_j^2 h_j^2}{q_j}+(1{-}3s)\sum_j \frac{p_j^2 h_j^2(3p_j{-}1)}{q_j^2}\Bigr] \\
-  &= (1{-}3s)\sum_j \frac{p_j^2 h_j^2}{q_j^2}\bigl[-6q_j+(1{-}3s)(3p_j{-}1)\bigr].
+  &= (1{-}3s)\Bigl[-6\textstyle\sum_j \frac{p_j^2 h_j^2}{q_j}\\
+  &\quad{}+(1{-}3s)\textstyle\sum_j \frac{p_j^2 h_j^2(3p_j{-}1)}{q_j^2}\Bigr] \\
+  &= (1{-}3s)\textstyle\sum_j \frac{p_j^2 h_j^2}{q_j^2}\bigl[-6q_j\!+\!(1{-}3s)(3p_j{-}1)\bigr].
 \end{align*}
 Expanding the bracket:
-\[
-  -6q_j+(1{-}3s)(3p_j{-}1)
-  = -6(1{-}3s)p_j-6s+3(1{-}3s)p_j-(1{-}3s)
-  = -3(1{-}3s)p_j-1-3s
+\begin{align*}
+  &-6q_j+(1{-}3s)(3p_j{-}1)\\
+  &\quad= -6(1{-}3s)p_j-6s+3(1{-}3s)p_j-(1{-}3s)\\
+  &\quad= -3(1{-}3s)p_j-1-3s
   = \Lambda_j(s).
-\]
+\end{align*}
 
 \emph{Sign analysis.}
 For $s\in[0,\tfrac{1}{3})$: $(1{-}3s)>0$, $p_j\geq 0$, so
@@ -74,12 +75,12 @@ If $\operatorname{Var}(g){>}0$, at least two categories $j$ satisfy $p_j>0$ and 
 Since $\Lambda_j<0$, the sum is strictly negative:
 $dV_B/ds<0$ for all $s\in(0,\tfrac{1}{3})$.
 
-\paragraph{Step 4: From $V_B$ to $|B|$ --- confounding (a).}
+\paragraph{Step 4: From $V_B$ to $|B|$, confounding (a).}
 Under proportional effects $f=\lambda g$ (Proposition~\ref{prop:conf_prop}):
-\[
-  B(C(\delta)) = \frac{\lambda\,V_W(\delta)}{V_W(\delta)+\sigma_T^2},
-  \quad V_W(\delta)=\operatorname{Var}(g)-V_B(c\delta).
-\]
+\begin{gather*}
+  B(C(\delta)) = \frac{\lambda\,V_W(\delta)}{V_W(\delta)+\sigma_T^2},\\
+  V_W(\delta)=\operatorname{Var}(g)-V_B(c\delta).
+\end{gather*}
 Step~3 shows $V_B(s)$ is strictly decreasing in $s=c\delta$, so $V_W(\delta)$ is strictly increasing from $0$ to $\operatorname{Var}(g)$.
 Since $x\mapsto |\lambda|\,x/(x+\sigma_T^2)$ is strictly increasing for $x\geq 0$:
 \[
@@ -96,11 +97,10 @@ The same argument yields $|B|$ strictly non-decreasing.
 
 \paragraph{Step 6: Collider (c).}
 Under proportional effects $h=\lambda g$ (Proposition~\ref{prop:col_prop}):
-\[
-  B_{\mathrm{col}}(C(\delta)) = -\frac{\lambda\,V_B(c\delta)}{\operatorname{Var}(T)-V_B(c\delta)},
-  \qquad
+\begin{gather*}
+  B_{\mathrm{col}}(C(\delta)) = -\frac{\lambda\,V_B(c\delta)}{\operatorname{Var}(T)-V_B(c\delta)},\\
   |B_{\mathrm{col}}| = |\lambda|\,\frac{V_B(c\delta)}{\operatorname{Var}(T)-V_B(c\delta)}.
-\]
+\end{gather*}
 Since $x\mapsto x/(a{-}x)$ is strictly increasing for $x\in[0,a)$
 and $V_B(s)$ is strictly decreasing (Step~3),
 $|B_{\mathrm{col}}(C(\delta))|$ is strictly non-increasing:
@@ -113,7 +113,7 @@ to $0$ at $\delta$ such that $V_B\to 0$.
 The general-$K$ monotonicity proof (§\ref{app:monotonicity_proof}) relies on
 convexity of $V_B(\delta)$ plus the endpoint condition $V_B'(1)\leq 0$,
 the latter verified only for $K{=}2$ analytically and $K\geq 3$ numerically.
-The $K{=}3$ symmetric proof is \emph{stronger}:
+The $K{=}3$ symmetric proof is stronger:
 it establishes $dV_B/ds<0$ at every interior point via the signed decomposition~\eqref{eq:k3dVB},
 bypassing both the convexity argument and the endpoint condition entirely.
 The key enabler is that the symmetric $C_0$ keeps $C(\delta)$ within the one-parameter family

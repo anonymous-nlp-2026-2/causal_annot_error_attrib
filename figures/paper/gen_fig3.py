@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate fig3_asv_ranking: Forest-plot comparison of ASV sensitivity rankings.
 
-Three-panel layout: Magnitude ASV | Significance Power | Inline stats (+ sign-flip).
-Narrative intent: different ASV types give DIFFERENT vulnerability rankings.
+Two-panel layout: Magnitude ASV | Significance Power.
+Stats table moved to LaTeX (Table in experiments.tex).
 """
 import matplotlib
 matplotlib.use('Agg')
@@ -11,14 +11,33 @@ import matplotlib.patches as mpatches
 import matplotlib.patheffects as pe
 import numpy as np
 import os
+import shutil
+
+# === UNIFIED PAPER COLOR PALETTE ===
+COLOR_SAFE = '#154360'      # Deep navy — structural guarantee topologies
+COLOR_DANGER = '#922B21'    # Deep crimson — sign-flip topologies
+
+TOPOLOGY_COLORS = {
+    'confounding': '#1B4F72',   # Royal navy
+    'exposure': '#C0392B',      # Vermillion red
+    'mediation': '#117A65',     # Dark emerald teal
+    'front_door': '#6C3483',    # Deep purple
+    'collider': '#1A5276',      # Petrol blue
+    'm_bias': '#2E4053',        # Dark slate
+    'iv': '#922B21',            # Dark crimson
+}
+
+COLOR_NEUTRAL = '#1C2833'    # Near-black for text/axes
+COLOR_GRID = '#D5D8DC'       # Light gray for grids
+COLOR_ACCENT = '#B7950B'     # Burnished gold (sparing use)
 
 plt.rcParams.update({
-    'font.family': 'DejaVu Sans',
+    'font.family': 'serif',
     'font.size': 10,
-    'axes.titlesize': 12,
+    'axes.titlesize': 11,
     'axes.labelsize': 10,
     'xtick.labelsize': 9,
-    'ytick.labelsize': 10,
+    'ytick.labelsize': 11,
     'legend.fontsize': 9,
     'figure.dpi': 300,
     'savefig.dpi': 300,
@@ -26,27 +45,43 @@ plt.rcParams.update({
     'savefig.pad_inches': 0.08,
     'axes.spines.top': False,
     'axes.spines.right': False,
+    'axes.linewidth': 0.8,
     'pdf.fonttype': 42,
     'ps.fonttype': 42,
-    'lines.linewidth': 1.8,
+    'lines.linewidth': 1.5,
+    'xtick.direction': 'out',
+    'ytick.direction': 'out',
+    'xtick.major.size': 3,
+    'ytick.major.size': 3,
 })
 
-# ── Colors (colorblind-safe Okabe-Ito) ────────────────────────────────────
-C_MAG  = '#0072B2'   # blue — magnitude ASV
-C_SIG  = '#E69F00'   # orange — significance power
-C_SIGN = '#D55E00'   # vermillion — sign-flip risk
-C_FRAG = '#D55E00'   # fragile zone tint (low alpha)
-C_IMMUNE = '#009E73'  # green — immune / structural guarantee
+# ── Per-topology color mapping ────────────────────────────────────────────
+TOPO_COLOR_MAP = {
+    'IV':          TOPOLOGY_COLORS['iv'],
+    'Exposure':    TOPOLOGY_COLORS['exposure'],
+    'Front-door':  TOPOLOGY_COLORS['front_door'],
+    'Confounding': TOPOLOGY_COLORS['confounding'],
+    'Mediation':   TOPOLOGY_COLORS['mediation'],
+    'Collider':    TOPOLOGY_COLORS['collider'],
+    'M-bias':      TOPOLOGY_COLORS['m_bias'],
+}
+
+C_TEXT     = '#1C2833'
+C_TEXT_SEC = '#555555'
+C_TEXT_DIM = '#999999'
+C_ROW_ALT = '#F4F6F7'  # very light gray alternating rows
+C_SPINE    = '#666666'
 
 # ── Data ──────────────────────────────────────────────────────────────────
-# Ordered by composite vulnerability (most fragile → most robust)
 topologies = [
-    'IV', 'Front-door', 'Exposure', 'Confounding',
+    'IV', 'Exposure', 'Front-door', 'Confounding',
     'Mediation', 'Collider', 'M-bias',
 ]
 N = len(topologies)
 
-# Magnitude ASV ranges (τ=0.5, 10% threshold). None=N/A, 'inf'=immune
+# Separator: after index 1 (Exposure), draw a thin line separating fragile from safe
+SEPARATOR_AFTER = 1  # after "Exposure" (index 1)
+
 mag_asv = {
     'IV':          (0.101, 0.607),
     'Front-door':  (0.064, 0.387),
@@ -57,7 +92,6 @@ mag_asv = {
     'M-bias':      'inf',
 }
 
-# Significance power (τ=0.05 filter). None=N/A
 sig_power = {
     'IV':          0,
     'Front-door':  100,
@@ -65,192 +99,141 @@ sig_power = {
     'Confounding': 100,
     'Mediation':   0,
     'Collider':    0,
-    'M-bias':      98,   # midpoint of 96–100%
+    'M-bias':      98,
 }
 
-# Sign-flip ASV
-sign_flip = {
-    'Exposure': '83.4%',
-    'IV':       '1.1–6.7',
-}
-
-# Brief characterization for significance panel annotations
 sig_note = {
     'Mediation': 'attenuating',
     'Collider':  'attenuating',
     'IV':        'Wald underpowered',
 }
 
-
-def fmt_mag(topo):
-    v = mag_asv[topo]
-    if v is None:
-        return '—'
-    if v == 'inf':
-        return '∞'
-    return f'{v[0]:.2f} – {v[1]:.2f}'
-
-
-def fmt_sig(topo):
-    v = sig_power[topo]
-    if v is None:
-        return '—'
-    return f'{v}%'
-
-
-def fmt_sf(topo):
-    return sign_flip.get(topo, '—')
-
-
 # ══════════════════════════════════════════════════════════════════════════
 #  BUILD FIGURE
 # ══════════════════════════════════════════════════════════════════════════
-fig = plt.figure(figsize=(9.5, 5))
-gs = fig.add_gridspec(1, 3, width_ratios=[2.2, 1.3, 2.0], wspace=0.08)
+fig = plt.figure(figsize=(7.0, 3.8))
+gs = fig.add_gridspec(1, 2, width_ratios=[3, 2], wspace=0.12)
 
-ax_mag  = fig.add_subplot(gs[0])
-ax_sig  = fig.add_subplot(gs[1])
-ax_stat = fig.add_subplot(gs[2])
+ax_mag = fig.add_subplot(gs[0])
+ax_sig = fig.add_subplot(gs[1])
 
-# Shared y setup
-for ax in (ax_mag, ax_sig, ax_stat):
-    ax.set_ylim(N - 0.5, -0.5)
+ROW_H = 0.42
+
+for ax in (ax_mag, ax_sig):
+    ax.set_ylim(N - 0.5 + 0.1, -0.6)
     # Alternating row backgrounds
     for i in range(N):
         if i % 2 == 0:
-            ax.axhspan(i - 0.5, i + 0.5, color='#f5f5f5', zorder=0, lw=0)
+            ax.axhspan(i - ROW_H, i + ROW_H, color=C_ROW_ALT, zorder=0, lw=0)
+    # Separator line between fragile and safe topologies
+    sep_y = SEPARATOR_AFTER + 0.5
+    ax.axhline(sep_y, color='#AAAAAA', lw=1.0, ls='-', zorder=1, alpha=0.6)
+    # Light horizontal grid on y-axis only
+    ax.grid(True, axis='x', alpha=0.10, color=COLOR_GRID, linewidth=0.4, zorder=0)
+    # Spine styling
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_color(C_SPINE)
+    ax.spines['bottom'].set_linewidth(0.8)
+    ax.tick_params(axis='y', length=0)
+    ax.tick_params(axis='x', colors=C_SPINE, labelsize=8)
 
 # ── Panel 1: Magnitude ASV ────────────────────────────────────────────────
-ax_mag.axvspan(0, 0.3, alpha=0.07, color=C_FRAG, zorder=0)
-ax_mag.axvline(0.3, color=C_FRAG, lw=0.6, ls=':', alpha=0.35, zorder=0)
-
 for i, t in enumerate(topologies):
     v = mag_asv[t]
+    color = TOPO_COLOR_MAP[t]
     if v is None:
-        ax_mag.text(0.8, i, 'N/A', fontsize=8.5, color='#bbbbbb',
+        ax_mag.text(0.8, i, 'N/A (non-differential)',
+                    fontsize=8, color=C_TEXT_DIM,
                     ha='center', va='center', fontstyle='italic')
     elif v == 'inf':
+        # Arrow to infinity for M-bias
         ax_mag.annotate(
-            '', xy=(2.35, i), xytext=(1.5, i),
-            arrowprops=dict(arrowstyle='->', color=C_IMMUNE, lw=2.2,
+            '', xy=(2.45, i), xytext=(1.5, i),
+            arrowprops=dict(arrowstyle='-|>', color=color, lw=2.2,
                             mutation_scale=14))
-        ax_mag.text(2.4, i, '∞', fontsize=14, color=C_IMMUNE,
+        ax_mag.text(2.55, i, '∞', fontsize=14, color=color,
                     ha='left', va='center', fontweight='bold')
     else:
         lo, hi = v
         mid = (lo + hi) / 2
-        ax_mag.plot([lo, hi], [i, i], color=C_MAG, lw=3,
-                    solid_capstyle='round', zorder=2, alpha=0.7)
-        ax_mag.plot(mid, i, 'o', color=C_MAG, ms=8, zorder=3,
-                    mec='white', mew=0.9)
-        ax_mag.plot(lo, i, '|', color=C_MAG, ms=6, mew=1.2, zorder=3)
-        ax_mag.plot(hi, i, '|', color=C_MAG, ms=6, mew=1.2, zorder=3)
+        # Range bar with rounded caps
+        ax_mag.plot([lo, hi], [i, i], color=color, lw=2.8,
+                    solid_capstyle='round', zorder=2, alpha=0.5)
+        # Central marker: filled circle with white edge
+        ax_mag.plot(mid, i, 'o', color=color, ms=8, zorder=3,
+                    mec='white', mew=1.2)
+        # End caps
+        ax_mag.plot(lo, i, '|', color=color, ms=6, mew=1.2, zorder=3)
+        ax_mag.plot(hi, i, '|', color=color, ms=6, mew=1.2, zorder=3)
 
-ax_mag.set_xlim(-0.02, 2.65)
-ax_mag.set_xlabel('ASV value  (lower → more fragile)')
-ax_mag.set_title('Magnitude ASV', fontweight='bold', color=C_MAG,
-                 loc='left', pad=8)
+ax_mag.set_xlim(-0.02, 2.8)
+ax_mag.set_xlabel('ASV value  (lower → more fragile)', fontsize=9,
+                  color=C_TEXT_SEC, labelpad=6)
+ax_mag.set_title('Magnitude ASV', fontweight='normal', color=COLOR_NEUTRAL,
+                 loc='left', pad=10, fontsize=10)
 ax_mag.set_yticks(range(N))
-ax_mag.set_yticklabels(topologies)
-ax_mag.grid(True, axis='x', alpha=0.12, zorder=0)
-ax_mag.spines['left'].set_visible(False)
-ax_mag.tick_params(axis='y', length=0)
+ax_mag.set_yticklabels(topologies, fontsize=10, fontweight='medium',
+                       color=C_TEXT)
 
-# Italicize 'Exposure' (sign-flip-only topology)
+# Style special labels
 for lbl in ax_mag.get_yticklabels():
-    if lbl.get_text() == 'Exposure':
+    txt = lbl.get_text()
+    if txt == 'Exposure':
         lbl.set_fontstyle('italic')
-        lbl.set_color('#888888')
+        lbl.set_color('#aaaaaa')
 
 # ── Panel 2: Significance Power ───────────────────────────────────────────
-ax_sig.axvspan(0, 50, alpha=0.07, color=C_FRAG, zorder=0)
-ax_sig.axvline(50, color=C_FRAG, lw=0.6, ls=':', alpha=0.35, zorder=0)
-
 for i, t in enumerate(topologies):
     v = sig_power[t]
+    color = TOPO_COLOR_MAP[t]
     if v is None:
-        ax_sig.text(50, i, 'N/A', fontsize=8.5, color='#bbbbbb',
+        ax_sig.text(50, i, 'N/A', fontsize=8, color=C_TEXT_DIM,
                     ha='center', va='center', fontstyle='italic')
     else:
-        # Lollipop: thin line from 0 to value
-        ax_sig.plot([0, v], [i, i], color=C_SIG, lw=1.5, alpha=0.4, zorder=2)
-        ax_sig.plot(v, i, '^', color=C_SIG, ms=10, zorder=3,
-                    mec='white', mew=0.9)
-        # Brief annotation for 0% power topologies
+        # Connecting line from 0 to value
+        ax_sig.plot([0, v], [i, i], color=color, lw=1.5, alpha=0.4,
+                    solid_capstyle='round', zorder=2)
+        # Marker: filled circle with white edge
+        ax_sig.plot(v, i, 'o', color=color, ms=8, zorder=3,
+                    mec='white', mew=1.2)
+        # Annotation notes
         if t in sig_note:
-            ax_sig.text(
-                4, i + 0.28, sig_note[t], fontsize=6.5,
-                color='#999999', fontstyle='italic', va='top')
+            offset_x = 6 if v < 50 else 5
+            txt = ax_sig.text(
+                v + offset_x, i, sig_note[t], fontsize=7.5,
+                color=C_TEXT_SEC, fontstyle='italic', va='center',
+                ha='left')
+            txt.set_path_effects([
+                pe.withStroke(linewidth=3.0, foreground='white')])
 
 ax_sig.set_xlim(-5, 115)
-ax_sig.set_xlabel('Power (%)')
-ax_sig.set_title('Significance Power', fontweight='bold', color=C_SIG,
-                 loc='left', pad=8)
+ax_sig.set_xlabel('Power (%)', fontsize=9, color=C_TEXT_SEC, labelpad=6)
+ax_sig.set_title('Significance Power', fontweight='normal', color=COLOR_NEUTRAL,
+                 loc='left', pad=10, fontsize=10)
 ax_sig.set_yticks(range(N))
 ax_sig.set_yticklabels([])
-ax_sig.grid(True, axis='x', alpha=0.12, zorder=0)
-ax_sig.spines['left'].set_visible(False)
-ax_sig.tick_params(axis='y', length=0)
-
-# ── Panel 3: Inline stats table ───────────────────────────────────────────
-ax_stat.set_xlim(0, 1)
-ax_stat.axis('off')
-
-cx = [0.01, 0.40, 0.66]
-headers = ['Mag ASV', 'Power', 'Sign-flip']
-h_colors = [C_MAG, C_SIG, C_SIGN]
-
-# Column headers
-for j, (hdr, hc) in enumerate(zip(headers, h_colors)):
-    ax_stat.text(cx[j], -0.35, hdr, fontsize=9, fontweight='bold',
-                 color=hc, va='center', clip_on=False)
-
-# Header underline
-ax_stat.plot([0.0, 0.98], [-0.12, -0.12], color='#dddddd', lw=0.6,
-             clip_on=False, transform=ax_stat.transData)
-
-for i, t in enumerate(topologies):
-    # Magnitude value
-    mc = C_IMMUNE if mag_asv[t] == 'inf' else '#444444'
-    ax_stat.text(cx[0], i, fmt_mag(t), fontsize=8.5, color=mc,
-                 va='center', family='monospace')
-    # Significance power
-    ax_stat.text(cx[1], i, fmt_sig(t), fontsize=8.5, color='#444444',
-                 va='center', family='monospace')
-    # Sign-flip
-    sf = fmt_sf(t)
-    if t in sign_flip:
-        ax_stat.plot(cx[2] - 0.04, i, 'D', color=C_SIGN, ms=5,
-                     mec='white', mew=0.5, zorder=3, clip_on=False)
-        ax_stat.text(cx[2], i, sf, fontsize=8.5, color=C_SIGN,
-                     va='center', fontweight='bold', family='monospace')
-    else:
-        ax_stat.text(cx[2], i, sf, fontsize=8.5, color='#cccccc',
-                     va='center', family='monospace')
-
-# ── Suptitle (insight, not description) ───────────────────────────────────
-fig.suptitle(
-    'Different ASV types yield different vulnerability rankings',
-    fontsize=11.5, fontstyle='italic', color='#444444', y=1.01)
 
 # ── Legend ─────────────────────────────────────────────────────────────────
 handles = [
-    plt.Line2D([0], [0], marker='o', color=C_MAG, ls='-', lw=2.5,
-               ms=7, mec='white', mew=0.9, alpha=0.7,
-               label='Magnitude ASV (range)'),
-    plt.Line2D([0], [0], marker='^', color=C_SIG, ls='-', lw=1.5,
-               ms=9, mec='white', mew=0.9, alpha=0.6,
-               label='Significance power'),
-    plt.Line2D([0], [0], marker='D', color=C_SIGN, ls='None',
-               ms=6, mec='white', mew=0.5,
-               label='Sign-flip risk'),
-    mpatches.Patch(fc=C_FRAG, alpha=0.07, ec='none',
-                   label='Fragile zone'),
+    plt.Line2D([0], [0], marker='o', color=COLOR_SAFE, ls='-', lw=2.2,
+               ms=7, mec='white', mew=1.0, alpha=0.55,
+               label='Safe topologies (magnitude range)'),
+    plt.Line2D([0], [0], marker='o', color=COLOR_DANGER, ls='-', lw=1.3,
+               ms=7, mec='white', mew=1.0, alpha=0.55,
+               label='Dangerous topologies'),
 ]
-fig.legend(handles=handles, loc='lower center', ncol=4,
-           bbox_to_anchor=(0.42, -0.04), frameon=False, fontsize=8.5)
+legend = fig.legend(
+    handles=handles, loc='lower center', ncol=2,
+    bbox_to_anchor=(0.5, -0.04), frameon=True, fontsize=8,
+    handletextpad=0.5, columnspacing=1.8,
+    fancybox=True,
+)
+legend.get_frame().set_facecolor('white')
+legend.get_frame().set_edgecolor('#cccccc')
+legend.get_frame().set_alpha(0.95)
+legend.get_frame().set_linewidth(0.5)
 
-fig.subplots_adjust(left=0.08, right=0.98, top=0.92, bottom=0.13, wspace=0.08)
+fig.subplots_adjust(left=0.12, right=0.97, top=0.87, bottom=0.22, wspace=0.12)
 
 # ── Save ──────────────────────────────────────────────────────────────────
 outdir = os.path.dirname(os.path.abspath(__file__))
@@ -260,3 +243,12 @@ fig.savefig(f'{base}.png', dpi=300)
 plt.close()
 print(f'Saved: {base}.pdf')
 print(f'Saved: {base}.png')
+
+# Copy to docs/paper/
+docs_dir = os.path.join(outdir, '..', '..', 'docs', 'paper')
+if os.path.isdir(docs_dir):
+    shutil.copy2(f'{base}.pdf', os.path.join(docs_dir, 'fig3_asv_ranking.pdf'))
+    shutil.copy2(f'{base}.png', os.path.join(docs_dir, 'fig3_asv_ranking.png'))
+    print(f'Copied to: {os.path.abspath(docs_dir)}/')
+else:
+    print(f'Warning: docs/paper/ directory not found at {docs_dir}')

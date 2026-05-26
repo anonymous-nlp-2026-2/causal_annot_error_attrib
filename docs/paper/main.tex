@@ -1,14 +1,21 @@
 \documentclass[11pt]{article}
 \usepackage[review]{acl}
 
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\IfFileExists{inconsolata.sty}{\usepackage{inconsolata}}{}
+
 \usepackage{graphicx}
 \usepackage{algorithm}
 \usepackage{algorithmic}
-
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{pifont}
 \usepackage{multirow}
+\usepackage{float}
 
 \newtheorem{definition}{Definition}
 \newtheorem{proposition}{Proposition}
@@ -18,10 +25,6 @@
 \newtheorem{observation}{Observation}
 \newtheorem{remark}{Remark}
 
-\setlength{\textfloatsep}{8pt plus 2pt minus 4pt}
-\setlength{\dbltextfloatsep}{8pt plus 2pt minus 4pt}
-\setlength{\floatsep}{8pt plus 2pt minus 4pt}
-\setlength{\dblfloatsep}{8pt plus 2pt minus 4pt}
 \graphicspath{{../../figures/paper/}}
 
 \title{Multi-Class Annotation Errors in Causal Inference:\\Topology-Dependent Bias, Sensitivity, and Correction}
@@ -37,8 +40,7 @@
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\textwidth,height=0.18\textheight,keepaspectratio]{fig1_dag_taxonomy.pdf}
-\vspace{-6pt}
+\includegraphics[width=\textwidth]{fig1_dag_taxonomy.pdf}
 \caption{Seven canonical DAG topologies with starred-node annotation~\cite{hernan_cole2009}. $A$ (latent) $\to$ $A^*$ (observed) via a dashed measurement edge; the causal role of $A$ varies: treatment (exposure), covariate (confounding, mediation, M-bias, front-door), selection (collider), instrument (IV).}
 \label{fig:dag_taxonomy}
 \end{figure*}

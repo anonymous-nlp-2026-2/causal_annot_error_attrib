@@ -14,13 +14,13 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 
-sys.path.insert(0, '.')
+sys.path.insert(0, '/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib')
 
 # Import plan_006's DGP + plim machinery directly (since they support arbitrary K)
 import importlib.util
 spec = importlib.util.spec_from_file_location(
     "plan_006",
-    "./plan_006_asv_empirical.py"
+    "/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib/plan_006_asv_empirical.py"
 )
 plan_006 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plan_006)
@@ -42,7 +42,7 @@ HAS_TREATMENT = {'confounding', 'mediation', 'collider', 'mbias', 'frontdoor'}
 N_MC = 200
 N_SAMPLES = 10_000
 
-ROOT = Path('.')
+ROOT = Path('/home/ubuntu/.agent-ml-research-prod_0510/projects/causal_annot_error_attrib')
 INPUT_JSON = ROOT / 'artifacts/plan006/asv_empirical_results.json'
 FILTER_JSON = ROOT / 'artifacts/plan006_full_filtered_stats.json'
 OUTPUT_JSON = ROOT / 'artifacts/theory_empirical_mape.json'

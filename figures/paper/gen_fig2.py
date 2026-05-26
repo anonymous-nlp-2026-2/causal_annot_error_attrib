@@ -10,29 +10,50 @@ import numpy as np
 from scipy.stats import gaussian_kde
 import os
 
+# === UNIFIED PAPER COLOR PALETTE ===
+COLOR_SAFE = '#154360'      # Deep navy — structural guarantee topologies
+COLOR_DANGER = '#922B21'    # Deep crimson — sign-flip topologies
+
+TOPOLOGY_COLORS = {
+    'confounding': '#1B4F72',   # Royal navy
+    'exposure': '#C0392B',      # Vermillion red
+    'mediation': '#117A65',     # Dark emerald teal
+    'front_door': '#6C3483',    # Deep purple
+    'collider': '#1A5276',      # Petrol blue
+    'm_bias': '#2E4053',        # Dark slate
+    'iv': '#922B21',            # Dark crimson
+}
+
+COLOR_NEUTRAL = '#1C2833'    # Near-black for text/axes
+COLOR_GRID = '#D5D8DC'       # Light gray for grids
+COLOR_ACCENT = '#B7950B'     # Burnished gold (sparing use)
+COLOR_BG_SAFE = '#D4E6F1'    # Subtle blue background
+COLOR_BG_DANGER = '#FADBD8'  # Subtle pink background
+
 plt.rcParams.update({
-    'font.family': 'DejaVu Sans',
-    'font.size': 11,
-    'axes.titlesize': 12,
-    'axes.labelsize': 11,
-    'xtick.labelsize': 9,
-    'ytick.labelsize': 9,
-    'legend.fontsize': 9,
+    'font.family': 'serif',
+    'font.size': 9,
+    'axes.titlesize': 10,
+    'axes.labelsize': 9,
+    'xtick.labelsize': 8,
+    'ytick.labelsize': 8,
+    'legend.fontsize': 8,
     'figure.dpi': 300,
     'savefig.dpi': 300,
     'savefig.bbox': 'tight',
     'savefig.pad_inches': 0.05,
     'axes.spines.top': False,
     'axes.spines.right': False,
+    'axes.linewidth': 0.8,
     'pdf.fonttype': 42,
     'ps.fonttype': 42,
-    'lines.linewidth': 1.8,
+    'lines.linewidth': 1.5,
+    'xtick.direction': 'out',
+    'ytick.direction': 'out',
+    'xtick.major.size': 3,
+    'ytick.major.size': 3,
 })
 
-SAFE = '#0072B2'    # blue (colorblind-friendly)
-DANGER = '#E69F00'  # orange (colorblind-friendly)
-DIST = '#0072B2'
-REF = '#555555'
 N_MC = 100_000
 N_POP = 2_000_000
 
@@ -354,33 +375,42 @@ for name, data, true in [
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# PLOT — 2×4 grid, per-panel x-axis, regime bands, KDE + histogram
+# PLOT — 2×4 grid, per-panel x-axis, KDE fills with per-topology colors
 # ═══════════════════════════════════════════════════════════════════════════════
 print("\nPlotting...")
-fig, axes = plt.subplots(2, 4, figsize=(14, 7))
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
+
+fig, axes = plt.subplots(2, 4, figsize=(7.2, 4.2))
 
 panels = [
-    dict(label='(a) Confounding', sub='Residual confounding',
-         data=plim_conf, tau=1.0, sub_color=DANGER),
-    dict(label='(b) Exposure', sub=f'{sf_exp_combined:.1%} β₁ sign reversal',
-         data=plim_exp1, tau=1.0, sub_color=DANGER, include_zero=True),
-    dict(label='(c) Mediation', sub='Direct-effect amplification',
-         data=plim_med, tau=1.0, sub_color=DANGER),
-    dict(label='(d) Collider', sub='Collider bias attenuated',
-         data=plim_col, tau=1.0, sub_color=SAFE),
-    dict(label='(e) M-bias', sub='Near-immune',
-         data=plim_mb, tau=1.0, sub_color=SAFE),
-    dict(label='(f) IV (naive OLS)', sub='Endogeneity compounded',
-         data=plim_iv, tau=1.0, sub_color=DANGER),
-    dict(label='(g) IV (Wald)', sub='52.6% sign reversal',
-         data=plim_iv_wald, tau=tau_wald, sub_color=DANGER, include_zero=True),
+    dict(panel_id='(a)', topo='Confounding', sub='(safe)',
+         data=plim_conf, tau=1.0, color=TOPOLOGY_COLORS['confounding']),
+    dict(panel_id='(b)', topo='Exposure', sub='(danger)',
+         data=plim_exp1, tau=1.0, color=TOPOLOGY_COLORS['exposure'], include_zero=True),
+    dict(panel_id='(c)', topo='Mediation', sub='(safe)',
+         data=plim_med, tau=1.0, color=TOPOLOGY_COLORS['mediation']),
+    dict(panel_id='(d)', topo='Collider', sub='(safe)',
+         data=plim_col, tau=1.0, color=TOPOLOGY_COLORS['collider']),
+    dict(panel_id='(e)', topo='M-bias', sub='(safe)',
+         data=plim_mb, tau=1.0, color=TOPOLOGY_COLORS['m_bias']),
+    dict(panel_id='(f)', topo='IV (naive OLS)', sub='(danger)',
+         data=plim_iv, tau=1.0, color=TOPOLOGY_COLORS['iv']),
+    dict(panel_id='(g)', topo='IV (Wald)', sub='(danger)',
+         data=plim_iv_wald, tau=tau_wald, color=TOPOLOGY_COLORS['iv'], include_zero=True),
 ]
 
-axes.flat[7].set_visible(False)
+# Use empty panel (bottom-right) for shared legend
+ax_leg = axes.flat[7]
+ax_leg.set_visible(True)
+ax_leg.set_xlim(0, 1)
+ax_leg.set_ylim(0, 1)
+ax_leg.axis('off')
 
 for ax, cfg in zip(axes.flat, panels):
     data = cfg['data']
     tau = cfg['tau']
+    dist_color = cfg['color']
     d = data[np.isfinite(data)]
 
     # ── Per-panel x-range ────────────────────────────────────────────────────
@@ -393,72 +423,72 @@ for ax, cfg in zip(axes.flat, panels):
     pad = max(0.1 * span, 0.02)
     x_range = (x_lo - pad, x_hi + pad)
 
-    # ── Regime bands ─────────────────────────────────────────────────────────
-    if x_range[0] < 0:
-        ax.axvspan(x_range[0], 0, alpha=0.07, color=DANGER, zorder=0)
-    safe_w = 0.05 * abs(tau)
-    ax.axvspan(max(tau - safe_w, x_range[0]), min(tau + safe_w, x_range[1]),
-               alpha=0.12, color=SAFE, zorder=0)
+    # ── White background ─────────────────────────────────────────────────────
+    ax.set_facecolor('white')
 
-    # ── Histogram ────────────────────────────────────────────────────────────
+    # ── KDE with solid fill ──────────────────────────────────────────────────
     d_plot = d[(d >= x_range[0]) & (d <= x_range[1])]
-    ax.hist(d_plot, bins=60, range=x_range, density=True,
-            alpha=0.25, color=DIST, edgecolor='none', zorder=2)
-
-    # ── KDE ──────────────────────────────────────────────────────────────────
     if len(d_plot) > 50:
         try:
             kde = gaussian_kde(d_plot, bw_method='scott')
             xk = np.linspace(x_range[0], x_range[1], 400)
             yk = kde(xk)
-            ax.plot(xk, yk, color=DIST, lw=1.5, zorder=3)
-            ax.fill_between(xk, yk, alpha=0.12, color=DIST, zorder=2)
+            # Solid fill with alpha=0.35
+            ax.fill_between(xk, 0, yk, alpha=0.35, color=dist_color,
+                            edgecolor='none', zorder=2)
+            # KDE line at full opacity
+            ax.plot(xk, yk, color=dist_color, lw=1.5, zorder=3,
+                    solid_capstyle='round')
         except Exception:
             pass
 
-    # ── Reference line ───────────────────────────────────────────────────────
-    ax.axvline(tau, color=REF, ls='--', lw=1.2, alpha=0.7, zorder=4)
+    # ── Reference line: τ_true with gold diamond ─────────────────────────────
+    ax.axvline(tau, color=COLOR_NEUTRAL, ls='-', lw=0.8, alpha=0.6, zorder=4)
+    trans = mtransforms.blended_transform_factory(ax.transData, ax.transAxes)
+    ax.plot(tau, 0.95, marker='D', markersize=4.0, color=COLOR_ACCENT,
+            transform=trans, zorder=6, clip_on=False)
 
-    # ── Title + subtitle ─────────────────────────────────────────────────────
-    ax.set_title(cfg['label'], fontsize=12, fontweight='bold', pad=16)
-    ax.text(0.5, 1.01, cfg['sub'], transform=ax.transAxes,
-            fontsize=9, ha='center', va='bottom', color=cfg['sub_color'],
-            fontstyle='italic')
-
-    # ── Stats box ────────────────────────────────────────────────────────────
-    sf_rate = np.nanmean(d * tau < 0)
-    viol_rate = np.nanmean(np.abs(d - tau) / max(abs(tau), 1e-8) > 0.10)
-    box_txt = (f'sign_flip={sf_rate:.1%}\n'
-               f'viol>10%={viol_rate:.1%}\n'
-               f'n={len(d):,}')
-    ax.text(0.97, 0.95, box_txt, transform=ax.transAxes,
-            fontsize=7.5, ha='right', va='top', family='monospace',
-            bbox=dict(boxstyle='round,pad=0.3', fc='white', alpha=0.85,
-                      ec='#cccccc', lw=0.5))
+    # ── Panel title: topology name with safe/danger suffix ───────────────────
+    title_text = f"{cfg['topo']} {cfg['sub']}"
+    ax.set_title(title_text, fontsize=9, fontweight='normal', pad=6, loc='center')
 
     # ── Axis limits ──────────────────────────────────────────────────────────
     ax.set_xlim(x_range)
     ax.set_ylim(bottom=0)
 
-    # ── τ_true label (after ylim is set) ─────────────────────────────────────
-    trans = mtransforms.blended_transform_factory(ax.transData, ax.transAxes)
+    # ── tau_true label ───────────────────────────────────────────────────────
     offset = 0.03 * (x_range[1] - x_range[0])
-    t = ax.text(tau + offset, 0.75, r'$\tau_{true}$', fontsize=8,
-                color=REF, alpha=0.6, va='center', transform=trans)
-    t.set_path_effects([pe.withStroke(linewidth=2, foreground='white')])
+    t = ax.text(tau + offset, 0.80, r'$\tau_{true}$', fontsize=7.5,
+                color=COLOR_NEUTRAL, alpha=0.7, va='center', transform=trans)
+    t.set_path_effects([pe.withStroke(linewidth=2.5, foreground='white')])
 
 for ax in axes[1, :]:
     if ax.get_visible():
-        ax.set_xlabel(r'plim $\hat{\tau}$', fontsize=11)
+        ax.set_xlabel(r'plim $\hat{\tau}$', fontsize=9)
 for ax in axes[:, 0]:
-    ax.set_ylabel('Density', fontsize=13)
+    ax.set_ylabel('Density', fontsize=9)
 
-fig.suptitle(
-    'Bias Distribution Under K=3 Non-Differential Misclassification\n'
-    '100,000 Random Confusion Matrices (Dirichlet(1,1,1) per column)',
-    fontsize=13, y=1.04)
+# Fix panel (e) M-bias x-tick overlap (narrow range ~0.975-1.025)
+ax_e = axes[1, 0]
+ax_e.set_xticks([0.98, 1.02])
+ax_e.tick_params(axis='x', labelsize=8)
 
-plt.tight_layout(h_pad=2.5, w_pad=1.2)
+# ── Shared legend in bottom-right panel ─────────────────────────────────────
+leg_handles = [
+    mpatches.Patch(fc=COLOR_SAFE, alpha=0.35, ec='none', label='Safe topology'),
+    mpatches.Patch(fc=COLOR_DANGER, alpha=0.35, ec='none', label='Dangerous topology'),
+    mlines.Line2D([], [], color=COLOR_NEUTRAL, lw=1.5, label='KDE estimate'),
+    mlines.Line2D([], [], color='none', marker='D', markersize=4,
+                  markerfacecolor=COLOR_ACCENT, markeredgecolor='none',
+                  label=r'$\tau_{\mathrm{true}}$'),
+]
+leg = ax_leg.legend(handles=leg_handles, loc='center', fontsize=8.5,
+                    frameon=True, fancybox=True, edgecolor='#cccccc',
+                    facecolor='white', framealpha=0.95,
+                    handlelength=1.8, handletextpad=0.6, labelspacing=0.85)
+leg.get_frame().set_linewidth(0.5)
+
+plt.tight_layout(h_pad=1.2, w_pad=0.6)
 
 out_dir = os.path.dirname(os.path.abspath(__file__))
 pdf_path = os.path.join(out_dir, 'fig2_bias_distribution.pdf')

@@ -1,9 +1,9 @@
-\begin{table*}[t]
+\begin{table}[H]
 \centering
 \caption{Non-differential misclassification stress test: sign flip rate (SF) and mean bias ratio (BR\,$=\overline{|\hat\tau/\tau|}$) under increasing differential departure $\varepsilon$.}
 \label{tab:stress-test}
 \small\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{llcrrrrrrrr}
+\resizebox{\columnwidth}{!}{\begin{tabular}{llcrrrrrrrr}
 \toprule
 Topology & $K$ & Q & \multicolumn{2}{c}{$\varepsilon\!=\!0.0$} & \multicolumn{2}{c}{$\varepsilon\!=\!0.01$} & \multicolumn{2}{c}{$\varepsilon\!=\!0.05$} & \multicolumn{2}{c}{$\varepsilon\!=\!0.1$} \\
 \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9} \cmidrule(lr){10-11}
@@ -41,7 +41,7 @@ IV & 3 & H & 0.00 & 1.42 & 0.00 & 1.45 & 0.00 & 1.58 & 0.00 & 1.69 \\
  &  & M & 0.00 & 1.83 & 0.00 & 1.96 & 0.00 & 2.43 & 0.00 & 2.84 \\
  &  & L & 0.00 & 3.15 & 0.00 & 3.54 & 0.00 & 4.39 & 0.00 & 9.69 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \vspace{1mm}
-\parbox{\textwidth}{\footnotesize SF\,=\,sign flip rate; BR\,=\,mean $|\hat\tau/\tau|$ (1.00 = unbiased). $\varepsilon\!=\!0$: non-differential; $\varepsilon\!>\!0$: outcome-dependent misclassification. Q: H/M/L\,=\,CM diagonal 0.8/0.6/0.4 with uniform off-diagonal. Each cell: $N\!=\!10{,}000\!\times\!100$ MC replications.}
-\end{table*}
+\parbox{\columnwidth}{\footnotesize SF\,=\,sign flip rate; BR\,=\,mean $|\hat\tau/\tau|$ (1.00 = unbiased). $\varepsilon\!=\!0$: non-differential; $\varepsilon\!>\!0$: outcome-dependent misclassification. Q: H/M/L\,=\,CM diagonal 0.8/0.6/0.4 with uniform off-diagonal. Each cell: $N\!=\!10{,}000\!\times\!100$ MC replications.}
+\end{table}
